@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./backend/app:/code/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SECRET_KEY=dev-secret-key-change-in-production
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5174:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+    environment:
+      - VITE_API_URL=http://localhost:8001
+    depends_on:
+      - backend
