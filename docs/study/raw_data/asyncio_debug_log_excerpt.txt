@@ -1,0 +1,20 @@
+※ 注記: 検証後にコンテナを再作成(revert)したため、docker compose logsの生ログ自体は
+コンテナ側から失われています。以下は検証実施中に `docker compose logs backend` を実行した
+コマンド出力をそのまま転記したものです（内容の書き換え・要約はしていません）。
+
+--- 1回目の検証（/products は非同時実行、参考） ---
+INFO:     Will watch for changes in these directories: ['/code']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [1] using WatchFiles
+INFO:     Started server process [8]
+INFO:     Waiting for application startup.
+14:56:39.702 asyncio Executing <Task pending name='Task-1' coro=<Server.serve() running at /usr/local/lib/python3.12/site-packages/uvicorn/server.py:69> wait_for=<Future pending cb=[Task.task_wakeup()] created at /usr/local/lib/python3.12/asyncio/locks.py:209> cb=[run_until_complete.<locals>.done_cb()] created at /usr/local/lib/python3.12/asyncio/runners.py:100> took 2.430 seconds
+INFO:     Application startup complete.
+INFO:     172.23.0.1:53752 - "GET /debug/async-block HTTP/1.1" 200 OK
+14:57:10.536 asyncio Executing <Task finished name='Task-3' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 5.002 seconds
+INFO:     172.23.0.1:49886 - "GET /products HTTP/1.1" 200 OK
+
+--- 2回目の検証（/products を同時実行、レポート本文で採用した数値） ---
+INFO:     172.23.0.1:50372 - "GET /debug/async-block HTTP/1.1" 200 OK
+14:58:05.262 asyncio Executing <Task finished name='Task-5' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 5.001 seconds
+INFO:     172.23.0.1:50374 - "GET /products HTTP/1.1" 200 OK

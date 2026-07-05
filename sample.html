@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#09090f;color:#e8eaf6;font-family:'Plus Jakarta Sans',system-ui,sans-serif;min-height:100vh;}
+input::placeholder{color:#4a5270;}
+input:focus{outline:none;border-color:rgba(91,139,245,0.5)!important;box-shadow:0 0 0 3px rgba(91,139,245,0.1);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#09090f;">
+
+  <!-- ======= HEADER ======= -->
+  <header style="position:sticky;top:0;z-index:200;height:64px;background:rgba(9,9,15,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.06);">
+    <div style="max-width:1320px;margin:0 auto;padding:0 32px;height:100%;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:32px;">
+        <span onClick="{{ goProducts }}" style="font-size:17px;font-weight:800;letter-spacing:-0.5px;cursor:pointer;color:#e8eaf6;display:flex;align-items:center;gap:8px;">
+          <span style="width:28px;height:28px;background:linear-gradient(135deg,#5b8bf5,#8b5cf6);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</span>
+          TechStore
+        </span>
+        <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+          <nav style="display:flex;gap:4px;">
+            <button onClick="{{ goProducts }}" style="background:none;border:none;color:#7c85a8;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:500;transition:all 0.15s;" style-hover="color:#e8eaf6;background:rgba(255,255,255,0.06);">商品一覧</button>
+            <button onClick="{{ goOrders }}" style="background:none;border:none;color:#7c85a8;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:500;" style-hover="color:#e8eaf6;background:rgba(255,255,255,0.06);">注文履歴</button>
+            <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ goAdminProducts }}" style="background:none;border:none;color:#7c85a8;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:500;" style-hover="color:#e8eaf6;background:rgba(255,255,255,0.06);">商品管理</button>
+              <button onClick="{{ goAdminOrders }}" style="background:none;border:none;color:#7c85a8;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:14px;font-family:inherit;font-weight:500;" style-hover="color:#e8eaf6;background:rgba(255,255,255,0.06);">注文管理</button>
+            </sc-if>
+          </nav>
+        </sc-if>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ goLogin }}" style="background:none;border:none;color:#7c85a8;cursor:pointer;padding:8px 16px;border-radius:9px;font-size:14px;font-family:inherit;font-weight:500;" style-hover="color:#e8eaf6;">ログイン</button>
+          <button onClick="{{ goRegister }}" style="background:#5b8bf5;border:none;color:#fff;cursor:pointer;padding:8px 18px;border-radius:9px;font-size:14px;font-family:inherit;font-weight:700;transition:background 0.15s;" style-hover="background:#7aa4f7;">新規登録</button>
+        </sc-if>
+        <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ goCart }}" style="position:relative;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#e8eaf6;cursor:pointer;padding:8px 16px;border-radius:9px;font-size:14px;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.15s;" style-hover="background:rgba(255,255,255,0.1);">
+            <span style="font-size:16px;">🛒</span> カート
+            <sc-if value="{{ hasCartItems }}" hint-placeholder-val="{{ false }}">
+              <span style="background:#5b8bf5;color:#fff;font-size:11px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;">{{ cartCount }}</span>
+            </sc-if>
+          </button>
+          <div style="display:flex;align-items:center;gap:10px;margin-left:4px;">
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#5b8bf5,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">{{ userInitial }}</div>
+            <button onClick="{{ doLogout }}" style="background:none;border:none;color:#7c85a8;cursor:pointer;font-size:13px;font-family:inherit;" style-hover="color:#ff6b6b;">ログアウト</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======= MAIN ======= -->
+  <main style="max-width:1320px;margin:0 auto;padding:40px 32px;">
+
+    <!-- ===== 商品一覧 ===== -->
+    <sc-if value="{{ showProducts }}" hint-placeholder-val="{{ true }}">
+      <div style="animation:fadeUp 0.3s ease;">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
+          <div>
+            <p style="font-size:12px;font-weight:600;letter-spacing:1px;color:#5b8bf5;text-transform:uppercase;margin-bottom:8px;">すべての商品</p>
+            <h1 style="font-size:32px;font-weight:800;letter-spacing:-1px;color:#e8eaf6;">ガジェット &amp; 電子機器</h1>
+          </div>
+          <p style="color:#4a5270;font-size:14px;">{{ productCount }}件の商品</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+          <sc-for list="{{ products }}" as="p" hint-placeholder-count="6">
+            <div onClick="{{ p.onClick }}" style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;cursor:pointer;transition:all 0.2s;" style-hover="border-color:rgba(91,139,245,0.35);transform:translateY(-3px);box-shadow:0 12px 40px rgba(91,139,245,0.08);">
+              <div style="background:#0d0f1f;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;position:relative;">
+                <img src="{{ p.image_url }}" alt="{{ p.name }}" style="width:55%;height:55%;object-fit:contain;opacity:0.9;" />
+                <sc-if value="{{ p.lowStock }}" hint-placeholder-val="{{ false }}">
+                  <span style="position:absolute;top:12px;right:12px;background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.3);color:#ff6b6b;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;">残りわずか</span>
+                </sc-if>
+              </div>
+              <div style="padding:18px;">
+                <h3 style="font-size:15px;font-weight:700;color:#e8eaf6;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.name }}</h3>
+                <p style="font-size:12px;color:#4a5270;margin-bottom:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ p.description }}</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:20px;font-weight:800;color:#e8eaf6;letter-spacing:-0.5px;">¥{{ p.priceStr }}</span>
+                  <span style="font-size:11px;color:#4a5270;background:rgba(255,255,255,0.04);padding:4px 9px;border-radius:5px;border:1px solid rgba(255,255,255,0.05);">在庫 {{ p.stock }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== 商品詳細 ===== -->
+    <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:fadeUp 0.3s ease;">
+        <button onClick="{{ goBack }}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:#4a5270;cursor:pointer;font-size:14px;font-family:inherit;font-weight:500;margin-bottom:32px;padding:0;transition:color 0.15s;" style-hover="color:#e8eaf6;">
+          ← 商品一覧に戻る
+        </button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;">
+          <div>
+            <div style="background:#0d0f1f;border:1px solid rgba(255,255,255,0.06);border-radius:20px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;">
+              <img src="{{ detailImg }}" alt="{{ detailName }}" style="width:60%;height:60%;object-fit:contain;" />
+            </div>
+          </div>
+          <div style="padding-top:8px;">
+            <span style="display:inline-block;background:rgba(91,139,245,0.12);color:#5b8bf5;font-size:11px;font-weight:700;letter-spacing:0.5px;padding:4px 10px;border-radius:6px;margin-bottom:18px;">電子機器</span>
+            <h1 style="font-size:30px;font-weight:800;color:#e8eaf6;line-height:1.25;letter-spacing:-0.8px;margin-bottom:14px;">{{ detailName }}</h1>
+            <p style="color:#7c85a8;font-size:15px;line-height:1.65;margin-bottom:28px;">{{ detailDesc }}</p>
+            <div style="padding:20px;background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:28px;">
+              <div style="font-size:38px;font-weight:800;letter-spacing:-1.5px;color:#e8eaf6;margin-bottom:4px;">¥{{ detailPriceStr }}</div>
+              <div style="font-size:13px;color:#4a5270;">在庫残り<span style="color:#e8eaf6;font-weight:600;margin-left:4px;">{{ detailStock }}個</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+              <div style="display:flex;align-items:center;background:#111422;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;">
+                <button onClick="{{ decQty }}" style="width:44px;height:48px;background:none;border:none;color:#e8eaf6;cursor:pointer;font-size:20px;font-family:inherit;transition:background 0.15s;" style-hover="background:rgba(255,255,255,0.06);">−</button>
+                <span style="min-width:44px;text-align:center;font-size:16px;font-weight:700;color:#e8eaf6;">{{ detailQty }}</span>
+                <button onClick="{{ incQty }}" style="width:44px;height:48px;background:none;border:none;color:#e8eaf6;cursor:pointer;font-size:20px;font-family:inherit;transition:background 0.15s;" style-hover="background:rgba(255,255,255,0.06);">+</button>
+              </div>
+              <button onClick="{{ addToCart }}" style="flex:1;height:48px;background:#5b8bf5;border:none;color:#fff;cursor:pointer;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;transition:all 0.2s;" style-hover="background:#7aa4f7;transform:translateY(-1px);">カートに入れる</button>
+            </div>
+            <sc-if value="{{ detailMsg }}" hint-placeholder-val="{{ false }}">
+              <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:12px 16px;color:#22c55e;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;">
+                ✓ {{ detailMsg }}
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== カート ===== -->
+    <sc-if value="{{ showCart }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:fadeUp 0.3s ease;">
+        <h1 style="font-size:28px;font-weight:800;letter-spacing:-0.8px;color:#e8eaf6;margin-bottom:32px;">ショッピングカート</h1>
+        <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:100px 40px;background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:20px;">
+            <div style="font-size:56px;margin-bottom:20px;opacity:0.5;">🛒</div>
+            <p style="color:#4a5270;font-size:16px;margin-bottom:24px;">カートに商品がありません</p>
+            <button onClick="{{ goProducts }}" style="background:#5b8bf5;border:none;color:#fff;cursor:pointer;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;">商品を探す</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ cartNotEmpty }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:16px;background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;">
+                  <div style="width:76px;height:76px;background:#0d0f1f;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <img src="{{ ci.image_url }}" alt="{{ ci.name }}" style="width:56px;height:56px;object-fit:contain;" />
+                  </div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:14px;font-weight:600;color:#e8eaf6;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ ci.name }}</div>
+                    <div style="font-size:16px;font-weight:700;color:#e8eaf6;">¥{{ ci.priceStr }}<span style="font-size:12px;color:#4a5270;font-weight:400;margin-left:4px;">/ 個</span></div>
+                  </div>
+                  <div style="display:flex;align-items:center;background:#0d0f1f;border:1px solid rgba(255,255,255,0.07);border-radius:9px;overflow:hidden;">
+                    <button onClick="{{ ci.dec }}" style="width:34px;height:34px;background:none;border:none;color:#e8eaf6;cursor:pointer;font-size:15px;font-family:inherit;" style-hover="background:rgba(255,255,255,0.06);">−</button>
+                    <span style="padding:0 10px;font-size:14px;font-weight:600;color:#e8eaf6;">{{ ci.quantity }}</span>
+                    <button onClick="{{ ci.inc }}" style="width:34px;height:34px;background:none;border:none;color:#e8eaf6;cursor:pointer;font-size:15px;font-family:inherit;" style-hover="background:rgba(255,255,255,0.06);">+</button>
+                  </div>
+                  <div style="font-size:16px;font-weight:700;color:#5b8bf5;min-width:88px;text-align:right;">¥{{ ci.subtotalStr }}</div>
+                  <button onClick="{{ ci.remove }}" style="background:none;border:none;color:#4a5270;cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;font-family:inherit;" style-hover="background:rgba(255,107,107,0.1);color:#ff6b6b;">×</button>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px;position:sticky;top:88px;">
+              <h2 style="font-size:15px;font-weight:700;color:#e8eaf6;margin-bottom:20px;letter-spacing:-0.2px;">注文サマリー</h2>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;font-size:14px;">
+                  <span style="color:#4a5270;">小計</span><span style="color:#e8eaf6;">¥{{ cartTotalStr }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;">
+                  <span style="color:#4a5270;">送料</span><span style="color:#22c55e;font-weight:600;">無料</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;">
+                  <span style="color:#4a5270;">消費税（10%）</span><span style="color:#e8eaf6;">¥{{ cartTaxStr }}</span>
+                </div>
+              </div>
+              <div style="border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;">
+                <span style="font-size:14px;color:#4a5270;">合計（税込）</span>
+                <span style="font-size:24px;font-weight:800;color:#e8eaf6;letter-spacing:-0.5px;">¥{{ cartGrandTotalStr }}</span>
+              </div>
+              <button onClick="{{ placeOrder }}" style="width:100%;height:50px;background:linear-gradient(135deg,#5b8bf5,#7b6cf6);border:none;color:#fff;cursor:pointer;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;transition:opacity 0.15s;" style-hover="opacity:0.9;">注文を確定する →</button>
+              <button onClick="{{ goProducts }}" style="width:100%;height:40px;background:none;border:none;color:#4a5270;cursor:pointer;font-size:13px;font-family:inherit;margin-top:10px;" style-hover="color:#e8eaf6;">← 買い物を続ける</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ===== 認証（ログイン / 新規登録） ===== -->
+    <sc-if value="{{ showAuth }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:flex-start;justify-content:center;padding-top:48px;gap:80px;animation:fadeUp 0.3s ease;">
+        <div style="flex:none;">
+          <div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:#e8eaf6;margin-bottom:8px;line-height:1.2;">{{ authTitle }}</div>
+          <p style="color:#4a5270;font-size:15px;margin-bottom:40px;max-width:280px;line-height:1.6;">{{ authSubtitle }}</p>
+          <div style="display:flex;flex-direction:column;gap:12px;width:360px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:#7c85a8;margin-bottom:7px;letter-spacing:0.3px;">メールアドレス</label>
+              <input type="email" value="{{ authEmail }}" onChange="{{ onEmailChange }}" placeholder="example@email.com" style="width:100%;height:46px;background:#111422;border:1px solid rgba(255,255,255,0.08);border-radius:11px;color:#e8eaf6;font-size:14px;padding:0 14px;font-family:inherit;transition:border-color 0.2s;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:#7c85a8;margin-bottom:7px;letter-spacing:0.3px;">パスワード</label>
+              <input type="password" value="{{ authPassword }}" onChange="{{ onPasswordChange }}" placeholder="6文字以上" style="width:100%;height:46px;background:#111422;border:1px solid rgba(255,255,255,0.08);border-radius:11px;color:#e8eaf6;font-size:14px;padding:0 14px;font-family:inherit;transition:border-color 0.2s;" />
+            </div>
+            <button onClick="{{ doAuth }}" style="height:50px;background:#5b8bf5;border:none;color:#fff;cursor:pointer;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;margin-top:4px;transition:all 0.2s;" style-hover="background:#7aa4f7;transform:translateY(-1px);">{{ authBtn }}</button>
+            <div style="text-align:center;font-size:13px;color:#4a5270;margin-top:4px;">
+              {{ authAltText }}
+              <button onClick="{{ toggleAuth }}" style="background:none;border:none;color:#5b8bf5;cursor:pointer;font-size:13px;font-family:inherit;font-weight:700;" style-hover="color:#7aa4f7;">{{ authAltLink }}</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding-top:16px;flex:none;">
+          <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:28px;width:280px;">
+            <p style="font-size:12px;font-weight:600;color:#5b8bf5;letter-spacing:0.5px;margin-bottom:16px;">DEMO CREDENTIALS</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="background:#0d0f1f;border-radius:10px;padding:12px 14px;">
+                <p style="font-size:11px;color:#4a5270;margin-bottom:4px;">一般ユーザー</p>
+                <p style="font-size:13px;color:#e8eaf6;font-family:monospace;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d1a4a2b4a391b4a9b0bca1bdb4ffb2bebc">[email&#160;protected]</a></p>
+                <p style="font-size:13px;color:#e8eaf6;font-family:monospace;">password123</p>
+              </div>
+              <div style="background:#0d0f1f;border-radius:10px;padding:12px 14px;">
+                <p style="font-size:11px;color:#4a5270;margin-bottom:4px;">管理者</p>
+                <p style="font-size:13px;color:#e8eaf6;font-family:monospace;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f59491989c9bb5908d9498859990db969a98">[email&#160;protected]</a></p>
+                <p style="font-size:13px;color:#e8eaf6;font-family:monospace;">admin12345</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== 注文履歴 ===== -->
+    <sc-if value="{{ showOrders }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:fadeUp 0.3s ease;">
+        <h1 style="font-size:28px;font-weight:800;letter-spacing:-0.8px;color:#e8eaf6;margin-bottom:8px;">注文履歴</h1>
+        <p style="color:#4a5270;font-size:14px;margin-bottom:32px;">{{ ordersLabel }}</p>
+        <sc-if value="{{ ordersEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:80px 40px;background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:20px;">
+            <p style="color:#4a5270;font-size:15px;">注文履歴がありません</p>
+          </div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{ orders }}" as="ord" hint-placeholder-count="2">
+            <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div>
+                  <div style="font-size:12px;color:#4a5270;margin-bottom:4px;">{{ ord.dateStr }}</div>
+                  <div style="font-size:15px;font-weight:700;color:#e8eaf6;">注文 #{{ ord.id }}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);color:#22c55e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.3px;">{{ ord.status }}</span>
+                  <span style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#e8eaf6;">¥{{ ord.totalStr }}</span>
+                </div>
+              </div>
+              <div style="padding:16px 24px;display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ ord.items }}" as="oi" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;">
+                    <span style="color:#7c85a8;">{{ oi.name }}<span style="color:#4a5270;margin-left:6px;">× {{ oi.quantity }}</span></span>
+                    <span style="color:#e8eaf6;font-weight:600;">¥{{ oi.priceStr }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== 管理者: 商品管理 ===== -->
+    <sc-if value="{{ showAdminProducts }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:fadeUp 0.3s ease;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+          <div>
+            <p style="font-size:12px;font-weight:600;letter-spacing:1px;color:#8b5cf6;text-transform:uppercase;margin-bottom:6px;">管理者パネル</p>
+            <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.6px;color:#e8eaf6;">商品管理</h1>
+          </div>
+          <button onClick="{{ openNewProduct }}" style="background:#5b8bf5;border:none;color:#fff;cursor:pointer;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background 0.15s;" style-hover="background:#7aa4f7;">
+            + 新規商品を追加
+          </button>
+        </div>
+        <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06);">
+                <th style="text-align:left;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">商品名</th>
+                <th style="text-align:left;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">説明</th>
+                <th style="text-align:right;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">価格</th>
+                <th style="text-align:right;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">在庫</th>
+                <th style="text-align:right;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ adminProducts }}" as="ap" hint-placeholder-count="3">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;" style-hover="background:rgba(255,255,255,0.02);">
+                  <td style="padding:16px 20px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div style="width:36px;height:36px;background:#0d0f1f;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <img src="{{ ap.image_url }}" alt="{{ ap.name }}" style="width:28px;height:28px;object-fit:contain;" />
+                      </div>
+                      <span style="font-size:14px;font-weight:600;color:#e8eaf6;">{{ ap.name }}</span>
+                    </div>
+                  </td>
+                  <td style="padding:16px 20px;font-size:13px;color:#4a5270;max-width:240px;">
+                    <span style="display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">{{ ap.description }}</span>
+                  </td>
+                  <td style="padding:16px 20px;text-align:right;font-size:15px;font-weight:700;color:#e8eaf6;">¥{{ ap.priceStr }}</td>
+                  <td style="padding:16px 20px;text-align:right;">
+                    <span style="font-size:14px;color:#7c85a8;">{{ ap.stock }}</span>
+                  </td>
+                  <td style="padding:16px 20px;text-align:right;">
+                    <div style="display:flex;justify-content:flex-end;gap:6px;">
+                      <button onClick="{{ ap.onEdit }}" style="background:rgba(255,255,255,0.06);border:none;color:#e8eaf6;cursor:pointer;padding:7px 14px;border-radius:8px;font-size:13px;font-family:inherit;font-weight:500;transition:background 0.15s;" style-hover="background:rgba(255,255,255,0.1);">編集</button>
+                      <button onClick="{{ ap.onDelete }}" style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.15);color:#ff6b6b;cursor:pointer;padding:7px 14px;border-radius:8px;font-size:13px;font-family:inherit;font-weight:500;transition:background 0.15s;" style-hover="background:rgba(255,107,107,0.15);">削除</button>
+                    </div>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== 管理者: 注文管理 ===== -->
+    <sc-if value="{{ showAdminOrders }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:fadeUp 0.3s ease;">
+        <div style="margin-bottom:28px;">
+          <p style="font-size:12px;font-weight:600;letter-spacing:1px;color:#8b5cf6;text-transform:uppercase;margin-bottom:6px;">管理者パネル</p>
+          <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.6px;color:#e8eaf6;">全注文一覧</h1>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+          <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;">
+            <p style="font-size:12px;color:#4a5270;margin-bottom:6px;">総注文数</p>
+            <p style="font-size:28px;font-weight:800;color:#e8eaf6;">{{ adminOrderCount }}<span style="font-size:14px;color:#4a5270;font-weight:400;margin-left:4px;">件</span></p>
+          </div>
+          <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;">
+            <p style="font-size:12px;color:#4a5270;margin-bottom:6px;">総売上</p>
+            <p style="font-size:28px;font-weight:800;color:#5b8bf5;">¥{{ adminTotalSales }}</p>
+          </div>
+          <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;">
+            <p style="font-size:12px;color:#4a5270;margin-bottom:6px;">平均注文額</p>
+            <p style="font-size:28px;font-weight:800;color:#e8eaf6;">¥{{ adminAvgOrder }}</p>
+          </div>
+        </div>
+        <div style="background:#111422;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06);">
+                <th style="text-align:left;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">注文ID</th>
+                <th style="text-align:left;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">注文者</th>
+                <th style="text-align:left;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">注文日時</th>
+                <th style="text-align:center;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">ステータス</th>
+                <th style="text-align:right;padding:14px 20px;font-size:11px;color:#4a5270;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;">合計</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ adminOrders }}" as="ao" hint-placeholder-count="3">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);" style-hover="background:rgba(255,255,255,0.02);">
+                  <td style="padding:15px 20px;font-size:13px;font-weight:700;color:#5b8bf5;">#{{ ao.id }}</td>
+                  <td style="padding:15px 20px;font-size:13px;color:#7c85a8;">{{ ao.userEmail }}</td>
+                  <td style="padding:15px 20px;font-size:13px;color:#4a5270;">{{ ao.dateStr }}</td>
+                  <td style="padding:15px 20px;text-align:center;">
+                    <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);color:#22c55e;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">{{ ao.status }}</span>
+                  </td>
+                  <td style="padding:15px 20px;text-align:right;font-size:15px;font-weight:700;color:#e8eaf6;">¥{{ ao.totalStr }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </sc-if>
+
+  </main>
+
+  <!-- ======= TOAST ======= -->
+  <sc-if value="{{ toastMsg }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1e35;border:1px solid rgba(91,139,245,0.25);border-radius:12px;padding:14px 24px;color:#e8eaf6;font-size:14px;font-weight:600;box-shadow:0 8px 40px rgba(0,0,0,0.5);animation:toastIn 0.3s ease;white-space:nowrap;display:flex;align-items:center;gap:10px;z-index:999;">
+      <span style="color:#22c55e;font-size:16px;">✓</span> {{ toastMsg }}
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1440, &quot;height&quot;: 900 }
+}">
+class Component extends DCLogic {
+  state = {
+    view: 'products',
+    selectedProduct: null,
+    detailQty: 1,
+    detailMsg: '',
+    cartItems: [],
+    user: null,
+    isLoginMode: true,
+    authEmail: '',
+    authPassword: '',
+    toast: null,
+    orders: [
+      {
+        id: 1001,
+        created_at: '2026-06-25T10:30:00',
+        status: 'completed',
+        total_price: 21760,
+        items: [
+          { id: 1, name: 'ワイヤレスイヤホン', quantity: 1, price: 8980, product: { name: 'ワイヤレスイヤホン' } },
+          { id: 2, name: 'モバイルバッテリー', quantity: 2, price: 3480, product: { name: 'モバイルバッテリー' } },
+        ],
+      },
+      {
+        id: 1002,
+        created_at: '2026-06-20T15:00:00',
+        status: 'completed',
+        total_price: 12800,
+        items: [
+          { id: 3, name: 'メカニカルキーボード', quantity: 1, price: 12800, product: { name: 'メカニカルキーボード' } },
+        ],
+      },
+    ],
+  };
+
+  MOCK_PRODUCTS = [
+    { id: 1, name: 'ワイヤレスイヤホン', description: 'ノイズキャンセリング機能付き。最大30時間再生対応。', price: 8980, stock: 15, image_url: 'https://placehold.co/300x300/0d0f1f/5b8bf5?text=ANC' },
+    { id: 2, name: 'メカニカルキーボード', description: '静音赤軸採用のコンパクト65%メカニカルキーボード。', price: 12800, stock: 8, image_url: 'https://placehold.co/300x300/0d0f1f/5b8bf5?text=KB' },
+    { id: 3, name: 'モバイルバッテリー', description: '10000mAh大容量。USB-C PD 20W急速充電対応。', price: 3480, stock: 30, image_url: 'https://placehold.co/300x300/0d0f1f/5b8bf5?text=BAT' },
+    { id: 4, name: 'USB-C ハブ 7in1', description: '4K HDMI・USB-A×3・SD・PD給電対応の多機能ハブ。', price: 4980, stock: 20, image_url: 'https://placehold.co/300x300/0d0f1f/5b8bf5?text=HUB' },
+    { id: 5, name: 'ゲーミングマウス', description: '16000DPI 高精度センサー搭載・超軽量68g設計。', price: 6500, stock: 7, image_url: 'https://placehold.co/300x300/0d0f1f/5b8bf5?text=MSE' },
+    { id: 6, name: '4K モニター 27インチ', description: 'sRGB 99% IPS液晶・USB-C給電・90Hz対応。', price: 45800, stock: 5, image_url: 'https://placehold.co/300x300/0d0f1f/5b8bf5?text=MON' },
+  ];
+
+  ADMIN_ORDERS = [
+    { id: 2001, user_email: 'tanaka@example.com', created_at: '2026-06-28T09:12:00', status: 'completed', total_price: 17460 },
+    { id: 2002, user_email: 'yamada@example.com', created_at: '2026-06-27T14:35:00', status: 'completed', total_price: 45800 },
+    { id: 2003, user_email: 'sato@example.com', created_at: '2026-06-26T11:22:00', status: 'completed', total_price: 8980 },
+    { id: 2004, user_email: 'suzuki@example.com', created_at: '2026-06-25T16:50:00', status: 'completed', total_price: 21760 },
+  ];
+
+  fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+  fmtDate(s) {
+    return new Date(s).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  nav(view, extra = {}) { this.setState({ view, detailMsg: '', ...extra }); }
+
+  toast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 3000);
+  }
+
+  renderVals() {
+    const { view, selectedProduct, detailQty, detailMsg, cartItems, user, isLoginMode, authEmail, authPassword, toast, orders } = this.state;
+
+    // Products
+    const products = this.MOCK_PRODUCTS.map(p => ({
+      ...p,
+      priceStr: this.fmt(p.price),
+      lowStock: p.stock <= 7,
+      onClick: () => this.setState({ selectedProduct: p, view: 'detail', detailQty: 1, detailMsg: '' }),
+    }));
+
+    // Detail
+    const dp = selectedProduct || {};
+
+    // Cart
+    const cartTax = cartItems.reduce((s, i) => s + i.price * i.quantity, 0) * 0.1;
+    const cartSubtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+    const cartItems_mapped = cartItems.map((item, idx) => ({
+      ...item,
+      priceStr: this.fmt(item.price),
+      subtotalStr: this.fmt(item.price * item.quantity),
+      inc: () => {
+        const u = [...cartItems];
+        u[idx] = { ...item, quantity: Math.min(item.quantity + 1, item.stock) };
+        this.setState({ cartItems: u });
+      },
+      dec: () => {
+        if (item.quantity <= 1) return;
+        const u = [...cartItems];
+        u[idx] = { ...item, quantity: item.quantity - 1 };
+        this.setState({ cartItems: u });
+      },
+      remove: () => this.setState({ cartItems: cartItems.filter((_, i) => i !== idx) }),
+    }));
+
+    // Admin stats
+    const totalSales = this.ADMIN_ORDERS.reduce((s, o) => s + o.total_price, 0);
+    const avgOrder = this.ADMIN_ORDERS.length ? totalSales / this.ADMIN_ORDERS.length : 0;
+
+    return {
+      // Views
+      showProducts: view === 'products',
+      showDetail: view === 'detail',
+      showCart: view === 'cart',
+      showAuth: view === 'auth',
+      showOrders: view === 'orders',
+      showAdminProducts: view === 'admin-products',
+      showAdminOrders: view === 'admin-orders',
+
+      // Header
+      isLoggedIn: !!user,
+      isGuest: !user,
+      isAdmin: !!(user && user.is_admin),
+      userInitial: user ? user.email[0].toUpperCase() : '',
+      hasCartItems: cartItems.length > 0,
+      cartCount: cartItems.length,
+
+      // Header nav
+      goProducts: () => this.nav('products'),
+      goCart: () => this.nav('cart'),
+      goOrders: () => this.nav('orders'),
+      goLogin: () => this.setState({ view: 'auth', isLoginMode: true }),
+      goRegister: () => this.setState({ view: 'auth', isLoginMode: false }),
+      goAdminProducts: () => this.nav('admin-products'),
+      goAdminOrders: () => this.nav('admin-orders'),
+      doLogout: () => this.setState({ user: null, view: 'products' }),
+      goBack: () => this.setState({ view: 'products', selectedProduct: null }),
+
+      // Products list
+      products,
+      productCount: products.length,
+
+      // Product detail
+      detailName: dp.name || '',
+      detailDesc: dp.description || '',
+      detailImg: dp.image_url || '',
+      detailPriceStr: dp.price ? this.fmt(dp.price) : '',
+      detailStock: dp.stock || 0,
+      detailQty,
+      detailMsg: detailMsg || false,
+      incQty: () => { if (dp.stock && detailQty < dp.stock) this.setState({ detailQty: detailQty + 1 }); },
+      decQty: () => { if (detailQty > 1) this.setState({ detailQty: detailQty - 1 }); },
+      addToCart: () => {
+        if (!user) { this.setState({ view: 'auth', isLoginMode: true }); return; }
+        const existing = cartItems.find(i => i.id === dp.id);
+        if (existing) {
+          this.setState({
+            cartItems: cartItems.map(i => i.id === dp.id ? { ...i, quantity: i.quantity + detailQty } : i),
+            detailMsg: 'カートに追加しました',
+          });
+        } else {
+          this.setState({
+            cartItems: [...cartItems, { ...dp, quantity: detailQty }],
+            detailMsg: 'カートに追加しました',
+          });
+        }
+      },
+
+      // Cart
+      cartItems: cartItems_mapped,
+      cartEmpty: cartItems.length === 0,
+      cartNotEmpty: cartItems.length > 0,
+      cartTotalStr: this.fmt(cartSubtotal),
+      cartTaxStr: this.fmt(cartTax),
+      cartGrandTotalStr: this.fmt(cartSubtotal + cartTax),
+      placeOrder: () => {
+        const newOrder = {
+          id: 1000 + orders.length + 1,
+          created_at: new Date().toISOString(),
+          status: 'completed',
+          total_price: cartSubtotal + cartTax,
+          items: cartItems.map((item, i) => ({ id: i, name: item.name, quantity: item.quantity, price: item.price, product: { name: item.name } })),
+        };
+        this.setState({ orders: [newOrder, ...orders], cartItems: [], view: 'orders' });
+        this.toast('ご注文ありがとうございます！');
+      },
+
+      // Auth
+      authTitle: isLoginMode ? 'おかえりなさい' : 'アカウント作成',
+      authSubtitle: isLoginMode ? 'メールアドレスとパスワードでログイン' : '新しいアカウントを作成して購入を始めよう',
+      authBtn: isLoginMode ? 'ログイン' : 'アカウントを作成',
+      authAltText: isLoginMode ? 'アカウントをお持ちでない方は' : 'すでにアカウントをお持ちの方は',
+      authAltLink: isLoginMode ? '新規登録' : 'ログインへ',
+      authEmail,
+      authPassword,
+      onEmailChange: e => this.setState({ authEmail: e.target.value }),
+      onPasswordChange: e => this.setState({ authPassword: e.target.value }),
+      toggleAuth: () => this.setState({ isLoginMode: !isLoginMode }),
+      doAuth: () => {
+        if (!authEmail || !authPassword) return;
+        const isAdmin = authEmail.toLowerCase().includes('admin');
+        this.setState({ user: { email: authEmail, is_admin: isAdmin }, view: 'products', authEmail: '', authPassword: '' });
+        this.toast(isLoginMode ? 'ログインしました' : 'アカウントを作成しました');
+      },
+
+      // Orders
+      orders: orders.map(o => ({
+        ...o,
+        dateStr: this.fmtDate(o.created_at),
+        totalStr: this.fmt(o.total_price),
+        items: (o.items || []).map(oi => ({
+          ...oi,
+          name: (oi.product && oi.product.name) || oi.name,
+          priceStr: this.fmt(oi.price * oi.quantity),
+        })),
+      })),
+      ordersEmpty: orders.length === 0,
+      ordersLabel: orders.length > 0 ? `${orders.length}件の注文` : '注文履歴はありません',
+
+      // Admin products
+      adminProducts: this.MOCK_PRODUCTS.map(p => ({
+        ...p,
+        priceStr: this.fmt(p.price),
+        onEdit: () => this.toast(`「${p.name}」を編集中... (実装予定)`),
+        onDelete: () => this.toast(`「${p.name}」を削除しました`),
+      })),
+      openNewProduct: () => this.toast('新規商品フォーム（実装予定）'),
+
+      // Admin orders
+      adminOrders: this.ADMIN_ORDERS.map(o => ({
+        ...o,
+        dateStr: this.fmtDate(o.created_at),
+        totalStr: this.fmt(o.total_price),
+        userEmail: o.user_email,
+      })),
+      adminOrderCount: this.ADMIN_ORDERS.length,
+      adminTotalSales: this.fmt(totalSales),
+      adminAvgOrder: this.fmt(avgOrder),
+
+      // Toast
+      toastMsg: toast || false,
+    };
+  }
+}
+</script>
+</body>
+</html>

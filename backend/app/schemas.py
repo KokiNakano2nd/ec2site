@@ -9,6 +9,7 @@ class ProductBase(BaseModel):
     price: float
     stock: int
     image_url: str | None = None
+    category: str | None = None
 
 
 class ProductCreate(ProductBase):
@@ -21,6 +22,20 @@ class ProductUpdate(BaseModel):
     price: float | None = None
     stock: int | None = None
     image_url: str | None = None
+    category: str | None = None
+
+
+class ProductImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    image_url: str
+    display_order: int
+
+
+class ProductImageCreate(BaseModel):
+    image_url: str
+    display_order: int = 0
 
 
 class ProductOut(ProductBase):
@@ -28,6 +43,7 @@ class ProductOut(ProductBase):
 
     id: int
     created_at: datetime
+    images: list[ProductImageOut] = []
 
 
 class UserCreate(BaseModel):
@@ -85,7 +101,102 @@ class OrderOut(BaseModel):
 
     id: int
     total_price: float
+    discount_amount: float = 0
+    coupon_code: str | None = None
     status: str
     created_at: datetime
     items: list[OrderItemOut]
     user_email: str | None = None
+
+
+class OrderCreate(BaseModel):
+    coupon_code: str | None = None
+
+
+class OrderStatusUpdate(BaseModel):
+    status: str
+
+
+class CouponCreate(BaseModel):
+    code: str
+    discount_type: str
+    discount_value: float
+    max_uses: int | None = None
+
+
+class CouponOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    code: str
+    discount_type: str
+    discount_value: float
+    is_active: bool
+    max_uses: int | None = None
+    used_count: int
+    created_at: datetime
+
+
+class CouponValidateOut(BaseModel):
+    code: str
+    discount_type: str
+    discount_value: float
+
+
+class FavoriteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product: ProductOut
+
+
+class ReviewCreate(BaseModel):
+    rating: int
+    comment: str | None = None
+
+
+class ReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    rating: int
+    comment: str | None = None
+    created_at: datetime
+    user_email: str | None = None
+
+
+class AddressCreate(BaseModel):
+    name: str
+    postal_code: str
+    prefecture: str
+    city: str
+    address_line1: str
+    address_line2: str | None = None
+    phone: str | None = None
+    is_default: bool = False
+
+
+class AddressUpdate(BaseModel):
+    name: str | None = None
+    postal_code: str | None = None
+    prefecture: str | None = None
+    city: str | None = None
+    address_line1: str | None = None
+    address_line2: str | None = None
+    phone: str | None = None
+    is_default: bool | None = None
+
+
+class AddressOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    postal_code: str
+    prefecture: str
+    city: str
+    address_line1: str
+    address_line2: str | None = None
+    phone: str | None = None
+    is_default: bool
+    created_at: datetime

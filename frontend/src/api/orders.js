@@ -1,9 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-export async function createOrder(token) {
+export async function createOrder(token, couponCode = null) {
   const res = await fetch(`${API_URL}/orders`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ coupon_code: couponCode || null }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

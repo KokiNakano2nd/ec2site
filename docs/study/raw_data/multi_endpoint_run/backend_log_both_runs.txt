@@ -1,0 +1,24 @@
+backend-1  | INFO:     172.23.0.1:36964 - "GET /debug/bad-async-block HTTP/1.1" 200 OK
+backend-1  | 15:24:19.052 asyncio Executing <Task finished name='Task-16' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 2.004 seconds
+backend-1  | INFO:     172.23.0.1:36942 - "GET /debug/good-async-sleep HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:36926 - "GET /debug/sync-block HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:36990 - "GET /debug/bad-async-block HTTP/1.1" 200 OK
+backend-1  | 15:24:21.069 asyncio Executing <Task finished name='Task-20' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 2.004 seconds
+backend-1  | INFO:     172.23.0.1:37000 - "GET /debug/bad-async-block HTTP/1.1" 200 OK
+backend-1  | 15:24:23.075 asyncio Executing <Task finished name='Task-21' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 2.002 seconds
+backend-1  | INFO:     172.23.0.1:36966 - "GET /debug/good-async-sleep HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:36986 - "GET /debug/good-async-sleep HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:36950 - "GET /debug/sync-block HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:36972 - "GET /debug/sync-block HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:33046 - "GET /debug/bad-async-block HTTP/1.1" 200 OK
+backend-1  | 15:24:52.897 asyncio Executing <Task finished name='Task-22' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 2.005 seconds
+backend-1  | INFO:     172.23.0.1:33096 - "GET /debug/bad-async-block HTTP/1.1" 200 OK
+backend-1  | 15:24:54.909 asyncio Executing <Task finished name='Task-27' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 2.001 seconds
+backend-1  | INFO:     172.23.0.1:33052 - "GET /debug/good-async-sleep HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:33064 - "GET /debug/sync-block HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:33074 - "GET /debug/sync-block HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:33112 - "GET /debug/bad-async-block HTTP/1.1" 200 OK
+backend-1  | 15:24:56.932 asyncio Executing <Task finished name='Task-30' coro=<RequestResponseCycle.run_asgi() done, defined at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:399> result=None created at /usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py:282> took 2.003 seconds
+backend-1  | INFO:     172.23.0.1:33108 - "GET /debug/good-async-sleep HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:33116 - "GET /debug/good-async-sleep HTTP/1.1" 200 OK
+backend-1  | INFO:     172.23.0.1:33090 - "GET /debug/sync-block HTTP/1.1" 200 OK

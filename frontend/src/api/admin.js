@@ -51,3 +51,18 @@ export async function fetchAdminOrders(token) {
   }
   return res.json();
 }
+
+export async function updateOrderStatus(token, orderId, status) {
+  const res = await fetch(`${API_URL}/admin/orders/${orderId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    throw new Error("ステータスの更新に失敗しました");
+  }
+  return res.json();
+}

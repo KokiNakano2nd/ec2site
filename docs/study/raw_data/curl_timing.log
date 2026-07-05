@@ -1,0 +1,4 @@
+23:58:00.253 start
+async-block status=200 time=4.993112s
+products(concurrent) status=200 time=5.001256s
+23:58:06.614 end

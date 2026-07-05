@@ -8,6 +8,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SECRET_KEY=dev-secret-key-change-in-production
+      # SMTP_HOST=smtp.gmail.com
+      # SMTP_PORT=587
+      # SMTP_USER=your@gmail.com
+      # SMTP_PASSWORD=your-app-password
+      # FROM_EMAIL=noreply@techstore.local
 
   frontend:
     build: ./frontend

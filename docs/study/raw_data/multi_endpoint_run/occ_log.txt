@@ -1,0 +1,19 @@
+OCC kind=bad-async-block req=0 thread=MainThread tid=135521824068416 event=end t=1783006428.737263
+OCC kind=good-async-sleep req=1 thread=MainThread tid=135521824068416 event=dispatch t=1783006444.454046
+OCC kind=bad-async-block req=2 thread=MainThread tid=135521824068416 event=start t=1783006444.455362
+OCC kind=bad-async-block req=2 thread=MainThread tid=135521824068416 event=end t=1783006446.456452
+OCC kind=good-async-sleep req=1 thread=MainThread tid=135521824068416 event=resume t=1783006446.457228
+OCC kind=bad-async-block req=1 thread=MainThread tid=135521824068416 event=start t=1783006446.457806
+OCC kind=bad-async-block req=1 thread=MainThread tid=135521824068416 event=end t=1783006448.458175
+OCC kind=good-async-sleep req=2 thread=MainThread tid=135521824068416 event=dispatch t=1783006448.467759
+OCC kind=sync-block req=2 thread=AnyIO worker thread tid=135521717974720 event=start t=1783006448.468632
+OCC kind=bad-async-block req=3 thread=MainThread tid=135521824068416 event=start t=1783006448.469579
+OCC kind=sync-block req=3 thread=AnyIO worker thread tid=135521708533440 event=start t=1783006448.469795
+OCC kind=sync-block req=2 thread=AnyIO worker thread tid=135521717974720 event=end t=1783006450.469217
+OCC kind=bad-async-block req=3 thread=MainThread tid=135521824068416 event=end t=1783006450.469860
+OCC kind=sync-block req=3 thread=AnyIO worker thread tid=135521708533440 event=end t=1783006450.470205
+OCC kind=good-async-sleep req=3 thread=MainThread tid=135521824068416 event=dispatch t=1783006450.471852
+OCC kind=good-async-sleep req=2 thread=MainThread tid=135521824068416 event=resume t=1783006450.471988
+OCC kind=sync-block req=1 thread=AnyIO worker thread tid=135521700140736 event=start t=1783006450.473186
+OCC kind=good-async-sleep req=3 thread=MainThread tid=135521824068416 event=resume t=1783006452.472447
+OCC kind=sync-block req=1 thread=AnyIO worker thread tid=135521700140736 event=end t=1783006452.473383

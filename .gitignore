@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+docs/study/.venv-pyspy/
 
 # SQLite dev DB
 backend/app/data/*.db
