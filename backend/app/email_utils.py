@@ -88,3 +88,15 @@ def send_status_notification(user_email: str, order_id: int, status: str) -> Non
 </body></html>
 """
     send_email(user_email, subject, body_html)
+
+
+def send_account_deletion_email(user_email: str) -> None:
+    subject = "【TechStore】退会が完了しました"
+    body_html = """
+<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
+  <h2 style="color:#1a1a2e">退会手続きが完了しました</h2>
+  <p>退会手続きが完了しました。ご利用ありがとうございました。</p>
+  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
+</body></html>
+"""
+    send_email(user_email, subject, body_html)

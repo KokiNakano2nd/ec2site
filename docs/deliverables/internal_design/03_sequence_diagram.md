@@ -3,7 +3,7 @@
 テンプレート: [[../../templates/internal_design/sequence_diagram_template|docs/templates/internal_design/sequence_diagram_template.md]]
 全体ルール: [[../../README|docs/README.md]](UML記法統一ルール(必須)を含む)
 
-対象: `01_use_cases.md`のユースケースのうち、複数コンポーネント(フロントエンド・API・DB・外部サービス)が絡む処理。本ドキュメントでは UC-002(カード決済)を中心に、UC-003(カード決済なし)も含めて作成する。UC-001(商品を探す/購入検討)は単純な参照系(`GET /products`)のみのため、シーケンス図の作成は省略する([[sequence_diagram_template|テンプレート]]3節「内部処理が複雑なものに限定する」の方針による)。UC-004(レビュー投稿)も、顧客→API→DBの単純な単一コンポーネント処理であり、Stripe連携のような多段の分岐・外部サービス連携を含まないため、同様の理由でシーケンス図の作成を省略する。会員管理・お気に入り・配送先管理・商品管理・クーポン管理・注文管理・売上分析の各業務についても、いずれも単一APIコールで完結する処理(注文管理業務のステータス更新+通知メール送信を除く)であり、シーケンス図を要するほどの複雑さはないと判断した。
+対象: `01_use_cases.md`のユースケースのうち、複数コンポーネント(フロントエンド・API・DB・外部サービス)が絡む処理。本ドキュメントでは UC-002(カード決済)を中心に、UC-003(カード決済なし)も含めて作成する。UC-001(商品を探す/購入検討)は単純な参照系(`GET /products`)のみのため、シーケンス図の作成は省略する([[sequence_diagram_template|テンプレート]]3節「内部処理が複雑なものに限定する」の方針による)。UC-004(レビュー投稿)も、顧客→API→DBの単純な単一コンポーネント処理であり、Stripe連携のような多段の分岐・外部サービス連携を含まないため、同様の理由でシーケンス図の作成を省略する。お気に入り・配送先管理・商品管理・クーポン管理・売上分析の各業務についても、いずれも単一APIコールで完結する処理であり、シーケンス図を要するほどの複雑さはないと判断した。注文管理業務(ステータス更新+通知メール送信)と会員管理業務のUC-005(退会。パスワード検証+DB複数テーブル更新+メール送信+ログアウトの多段処理)は例外的に複雑度が高いため、シーケンス図を作成する。
 
 ## UC-003: カード決済を使わずに注文を確定する
 
@@ -173,6 +173,38 @@ sequenceDiagram
         Frontend->>管理者: 更新完了を表示する
     end
 ```
+
+## UC-005: 退会する(2026-07-11追加)
+
+`DELETE /users/me`(`backend/app/main.py`)に対応する。パスワード検証・DB複数テーブル更新・匿名化前アドレスへのメール送信・フロントエンド側ログアウトという多段処理のため、他のUCと同様にシーケンス図を作成する。
+
+```mermaid
+sequenceDiagram
+    actor 顧客
+    participant Frontend as フロントエンド(ProfileView)
+    participant API as main.py(/users/me)
+    participant DB as DB(users, addresses, favorites)
+    participant Mail as email_utils(send_account_deletion_email)
+
+    顧客->>Frontend: 「退会する」→パスワード入力→確定
+    Frontend->>API: DELETE /users/me (password)
+    API->>API: verify_password(password, current_user.hashed_password)
+    alt パスワード不一致
+        API-->>Frontend: 403「パスワードが正しくありません」
+    else パスワード一致
+        API->>Mail: send_account_deletion_email(退会前のメールアドレス)
+        Mail-->>API: 送信完了(またはログ出力のみ)
+        API->>DB: addresses・favoritesを削除する
+        API->>DB: usersのemailを匿名化し、hashed_passwordを再利用不能な値に置換、is_active=false、deleted_at=現在時刻に更新
+        DB-->>API: コミット完了
+        API-->>Frontend: 204
+        Frontend->>Frontend: トークンを破棄する(ログアウト)
+        Frontend->>顧客: ログイン画面に遷移する
+    end
+```
+
+- メール送信(`send_account_deletion_email`)は、メールアドレスを匿名化する**前**に呼び出す(匿名化後では本人に届かないため)。この呼び出し順序は`main.py`の実装上の制約であり、他のUC(注文確認メール等)とは異なりDB更新より先に実行する
+- 注文履歴(`orders`/`order_items`)・レビュー(`reviews`)は本処理では更新・削除しない(UC-005備考、NFR-013参照)
 
 ## 補足: UC-002とUC-003の内部処理の違い
 

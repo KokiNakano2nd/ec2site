@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from . import auth, models, schemas
 from .database import Base, engine, get_db
-from .email_utils import send_order_confirmation, send_status_notification
+from .email_utils import send_account_deletion_email, send_order_confirmation, send_status_notification
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -129,6 +129,27 @@ def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
 @app.get("/auth/me", response_model=schemas.UserOut)
 def read_current_user(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
+
+
+@app.delete("/users/me", status_code=204)
+def delete_account(
+    body: schemas.AccountDeleteRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not auth.verify_password(body.password, current_user.hashed_password):
+        raise HTTPException(status_code=403, detail="パスワードが正しくありません")
+
+    send_account_deletion_email(current_user.email)
+
+    db.query(models.Address).filter(models.Address.user_id == current_user.id).delete()
+    db.query(models.Favorite).filter(models.Favorite.user_id == current_user.id).delete()
+
+    current_user.email = f"deleted-user-{current_user.id}@deleted.invalid"
+    current_user.hashed_password = auth.hash_password(os.urandom(32).hex())
+    current_user.is_active = False
+    current_user.deleted_at = datetime.utcnow()
+    db.commit()
 
 
 @app.get("/cart", response_model=list[schemas.CartItemOut])

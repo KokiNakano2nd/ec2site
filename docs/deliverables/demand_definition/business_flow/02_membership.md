@@ -44,3 +44,29 @@ flowchart TD
     H --> J
     I --> J
 ```
+
+### 業務フロー図(To-Be): 退会(2026-07-11追加)
+
+以前は`06_nonfunctional_requirements.md`のNFR-016で「退会機能は現時点で実装されていない」ことが今後の課題として明記されているのみだったが、新機能として追加する。
+
+```mermaid
+flowchart TD
+    subgraph 顧客
+        K((●)) --> L["プロフィール画面で「退会する」を選択する<br/><<システム化>>"]
+        L --> M["確認のため現在のパスワードを再入力する<br/><<システム化>>"]
+    end
+    subgraph システム
+        N{"パスワードが一致するか<br/><<システム化>>"}
+        O["アカウントを論理削除する(is_active=false)し、\nメールアドレス等の個人情報を匿名化する<br/><<システム化>>"]
+        P["ログアウトさせる<br/><<システム化>>"]
+    end
+    M --> N
+    N -->|不一致| Q["「パスワードが正しくありません」を表示する"]
+    N -->|一致| O
+    O --> P
+    P --> R((◎))
+    Q --> R
+```
+
+- 注文履歴(`orders`/`order_items`)は業務記録として匿名化・削除せず残す。個人情報の扱いの詳細は[[../../requirements/06_nonfunctional_requirements|06_nonfunctional_requirements.md]] NFR-013・NFR-016を参照
+

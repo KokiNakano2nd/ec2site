@@ -36,3 +36,4 @@ classDiagram
 - 決済(Stripe Checkout Session)はシステム外部のサービスであるため、概念エンティティとしては扱わない
 - CART_ITEMは決済完了時にORDER_ITEMへ変換され、削除される(UC-002 基本フロー10〜12)。この「カートから注文への変換」は業務上重要な流れのため、テーブル設計時(内部設計フェーズ)にも引き継ぐ
 - 管理者(admin)は独立したエンティティとしては設けていない。実装(`backend/app/models.py`)上、`users`テーブルの`is_admin`フラグで一般顧客と管理者を区別しているため、概念モデルでもCUSTOMERエンティティを共用する
+- 退会機能(UC-005、2026-07-11追加)により、CUSTOMERは「有効/無効(論理削除済み)」の状態を持つようになった。概念モデル上は既存のCUSTOMERエンティティの状態(属性)として表現し、独立したエンティティは追加しない。物理設計(`is_active`, `deleted_at`カラム)は[[../internal_design/01_table_definition|01_table_definition.md]]を参照

@@ -16,6 +16,7 @@
 | 商品購入業務 | F-008 | カード決済を使わない注文確定 | UC-003 | [F-008.md](function_list/F-008.md) |
 | 会員管理業務 | F-009 | 会員登録 | US-006 | [F-009.md](function_list/F-009.md) |
 | 会員管理業務 | F-010 | ログイン | US-007 | [F-010.md](function_list/F-010.md) |
+| 会員管理業務 | F-030 | 退会(アカウント論理削除) | US-020, UC-005 | [F-030.md](function_list/F-030.md) |
 | お気に入り管理業務 | F-011 | お気に入り登録・解除 | US-008 | [F-011.md](function_list/F-011.md) |
 | お気に入り管理業務 | F-012 | お気に入り一覧参照 | US-008 | [F-012.md](function_list/F-012.md) |
 | レビュー投稿業務 | F-013 | レビュー投稿 | UC-004 | [F-013.md](function_list/F-013.md) |

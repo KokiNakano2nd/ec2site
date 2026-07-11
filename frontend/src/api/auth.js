@@ -35,3 +35,15 @@ export async function fetchMe(token) {
   }
   return res.json();
 }
+
+export async function deleteAccount(token, password) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ password }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "退会処理に失敗しました");
+  }
+}

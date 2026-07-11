@@ -32,6 +32,8 @@ classDiagram
         +string email
         +string hashed_password
         +bool is_admin
+        +bool is_active
+        +datetime deleted_at
         +datetime created_at
     }
     class addresses {
@@ -150,9 +152,11 @@ classDiagram
 | email | STRING | index, UNIQUE | NOT NULL | なし | メールアドレス(ログインID) |
 | hashed_password | STRING | | NOT NULL | なし | ハッシュ化済みパスワード |
 | is_admin | BOOLEAN | | NOT NULL | false | 管理者フラグ |
+| is_active | BOOLEAN | | NOT NULL | true | 有効フラグ。退会(F-030)により`false`になる論理削除フラグ(2026-07-11追加) |
+| deleted_at | DATETIME | | NULL可 | なし | 退会日時(退会済みでない場合`NULL`)(2026-07-11追加) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 
-- インデックス: `email` に一意インデックス(`unique=True, index=True`)を実装で明示的に付与している。
+- インデックス: `email` に一意インデックス(`unique=True, index=True`)を実装で明示的に付与している。退会後は匿名化されたメールアドレス(`deleted-user-{id}@deleted.invalid`)に書き換わるため、一意制約に抵触せず同一メールアドレスでの再登録が可能になる
 
 ### addresses テーブル
 

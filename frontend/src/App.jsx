@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { fetchProducts, fetchProductById, fetchRecommendations, addProductImage, deleteProductImage } from "./api/products";
-import { register } from "./api/auth";
+import { register, deleteAccount } from "./api/auth";
 import { fetchCart, addToCart, updateCartItem, removeCartItem } from "./api/cart";
 import { createOrder, fetchOrders } from "./api/orders";
 import { createProduct, updateProduct, deleteProduct, fetchAdminOrders, updateOrderStatus } from "./api/admin";
@@ -1464,13 +1464,17 @@ function AdminDashboardView() {
   );
 }
 
-function ProfileView({ showToast }) {
-  const { user, token } = useAuth();
+function ProfileView({ showToast, onAccountDeleted }) {
+  const { user, token, logout } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState(null);
   const emptyForm = { name: "", postal_code: "", prefecture: "", city: "", address_line1: "", address_line2: "", phone: "", is_default: false };
   const [form, setForm] = useState(emptyForm);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (token) fetchAddresses(token).then(setAddresses).catch(() => {});
@@ -1513,6 +1517,21 @@ function ProfileView({ showToast }) {
       if (showToast) showToast("デフォルト住所を変更しました");
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleDeleteAccount(e) {
+    e.preventDefault();
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await deleteAccount(token, deletePassword);
+      logout();
+      if (onAccountDeleted) onAccountDeleted();
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -1619,6 +1638,50 @@ function ProfileView({ showToast }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      <div style={{ marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.border}` }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: C.red, marginBottom: 12 }}>危険な操作</h2>
+        <div style={{ background: C.surface, border: "1px solid rgba(255,107,107,0.3)", borderRadius: 14, padding: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.text }}>アカウントを退会する</p>
+            <p style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>退会するとログインできなくなり、メールアドレス等の個人情報が匿名化されます。注文履歴は業務記録として残ります。</p>
+          </div>
+          <button className="btn-danger" onClick={() => { setShowDeleteModal(true); setDeleteError(null); setDeletePassword(""); }} style={{ padding: "8px 16px", fontSize: 13, flexShrink: 0 }}>
+            退会する
+          </button>
+        </div>
+      </div>
+
+      {showDeleteModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <form onSubmit={handleDeleteAccount} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, width: 360, animation: "fadeUp 0.2s ease" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>本当に退会しますか？</h3>
+            <p style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>確認のため、現在のパスワードを入力してください。</p>
+            <FieldLabel>パスワード</FieldLabel>
+            <input
+              type="password"
+              style={fieldStyle}
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              required
+              autoFocus
+            />
+            {deleteError && (
+              <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 13, marginTop: 12 }}>
+                {deleteError}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
+              <button type="button" className="btn-surface" onClick={() => setShowDeleteModal(false)} style={{ padding: "8px 16px", fontSize: 13 }}>
+                キャンセル
+              </button>
+              <button type="submit" className="btn-danger" disabled={deleting} style={{ padding: "8px 16px", fontSize: 13 }}>
+                {deleting ? "処理中..." : "退会を実行する"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
@@ -1960,7 +2023,7 @@ function MainView() {
             onSelect={(id) => { setSelectedId(id); setView("products"); }}
           />
         )}
-        {view === "profile" && <ProfileView showToast={showToast} />}
+        {view === "profile" && <ProfileView showToast={showToast} onAccountDeleted={() => navigate("login")} />}
         {view === "admin-dashboard" && <AdminDashboardView />}
         {view === "admin-products" && <AdminProductsView showToast={showToast} />}
         {view === "admin-orders" && <AdminOrdersView showToast={showToast} />}

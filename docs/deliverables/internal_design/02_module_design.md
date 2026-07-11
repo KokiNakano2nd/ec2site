@@ -55,7 +55,7 @@ classDiagram
 - **`models.py`**: SQLAlchemyモデル定義(`Product`, `ProductImage`, `User`, `Address`, `Cart`, `Coupon`, `Order`, `OrderItem`, `Favorite`, `Review`)。`01_table_definition.md`の物理テーブル定義の実体。
 - **`schemas.py`**: Pydanticスキーマ定義。APIリクエスト/レスポンスの型を定義する(`ProductOut`, `OrderCreate`, `OrderOut` 等)。他の自作モジュールに依存しない。
 - **`auth.py`**: JWT認証(トークン発行・検証)、パスワードハッシュ化(`passlib`)、`get_current_user`等の依存性注入関数を提供する。`models`・`database`に依存する。
-- **`email_utils.py`**: 注文確認メール(`send_order_confirmation`)・状態通知メール(`send_status_notification`)の送信。`SMTP_HOST`未設定時はコンソール出力にフォールバックする(開発時モード)。他の自作モジュールに依存しない。
+- **`email_utils.py`**: 注文確認メール(`send_order_confirmation`)・状態通知メール(`send_status_notification`)・退会完了通知メール(`send_account_deletion_email`、2026-07-11追加)の送信。`SMTP_HOST`未設定時はコンソール出力にフォールバックする(開発時モード)。他の自作モジュールに依存しない。
 - **`database.py`**: SQLAlchemyエンジン・セッション(`get_db`)・`Base`(モデルの基底クラス)を初期化する。他の自作モジュールに依存しない。
 
 ## 3. `02_api_spec.md` のエンドポイントとモジュールの対応
@@ -71,6 +71,7 @@ classDiagram
 | `GET /config`, `POST /payment/checkout`, `POST /payment/complete` | `main.py` | `models`, `schemas`, `auth`, `email_utils`, `stripe`(外部ライブラリ) |
 | `GET /addresses` | `main.py` | `models`, `schemas`, `auth` |
 | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | `main.py` | `models`, `schemas`, `auth` |
+| `DELETE /users/me` | `main.py` | `models`, `schemas`, `auth`, `email_utils`(退会完了通知) |
 | `GET /favorites`, `POST /favorites/{id}`, `DELETE /favorites/{id}` | `main.py` | `models`, `schemas`, `auth` |
 | `GET /products/{id}/reviews`, `POST /products/{id}/reviews` | `main.py` | `models`, `schemas`, `auth` |
 | `POST /addresses`, `PATCH /addresses/{id}`, `DELETE /addresses/{id}`, `POST /addresses/{id}/default` | `main.py` | `models`, `schemas`, `auth` |
