@@ -3,6 +3,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from .logging_config import get_logger
+
+logger = get_logger(__name__)
+
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
@@ -32,8 +36,9 @@ def send_email(to: str, subject: str, body_html: str) -> None:
             if SMTP_USER:
                 smtp.login(SMTP_USER, SMTP_PASSWORD)
             smtp.sendmail(FROM_EMAIL, to, msg.as_string())
+        logger.info("メール送信成功(to=%s, subject=%s)", to, subject)
     except Exception as e:
-        print(f"[EMAIL] 送信失敗: {e}")
+        logger.error("メール送信失敗(to=%s, subject=%s): %s", to, subject, e)
 
 
 def send_order_confirmation(user_email: str, order_id: int, total_price: float, items: list[dict]) -> None:

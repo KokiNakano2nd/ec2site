@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 from . import auth, models, schemas
 from .database import Base, engine, get_db
 from .email_utils import send_order_confirmation, send_status_notification
+from .logging_config import get_logger
+
+logger = get_logger(__name__)
 
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5174")
@@ -889,6 +892,7 @@ def create_checkout_session(
         )
         return {"session_url": session.url}
     except Exception as e:
+        logger.error("Stripe checkout session作成に失敗しました(user_id=%s): %s", current_user.id, e)
         raise HTTPException(status_code=500, detail=f"Stripe エラー: {str(e)}")
 
 
@@ -904,11 +908,16 @@ def complete_payment(
     try:
         session = stripe_lib.checkout.Session.retrieve(session_id)
     except Exception as e:
+        logger.error("Stripe session取得に失敗しました(session_id=%s): %s", session_id, e)
         raise HTTPException(status_code=400, detail=f"セッション取得失敗: {str(e)}")
 
     if session.payment_status != "paid":
         raise HTTPException(status_code=400, detail="支払いが完了していません")
     if str(session.metadata.get("user_id")) != str(current_user.id):
+        logger.warning(
+            "他ユーザーの決済セッションへのアクセス試行(session_id=%s, session_user_id=%s, request_user_id=%s)",
+            session_id, session.metadata.get("user_id"), current_user.id,
+        )
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 
     cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
