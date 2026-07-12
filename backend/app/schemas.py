@@ -10,6 +10,7 @@ class ProductBase(BaseModel):
     stock: int
     image_url: str | None = None
     category: str | None = None
+    low_stock_threshold: int | None = None
 
 
 class ProductCreate(ProductBase):
@@ -23,6 +24,7 @@ class ProductUpdate(BaseModel):
     stock: int | None = None
     image_url: str | None = None
     category: str | None = None
+    low_stock_threshold: int | None = None
 
 
 class ProductImageOut(BaseModel):

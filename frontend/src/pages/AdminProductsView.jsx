@@ -6,6 +6,10 @@ import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
 import { fmt } from "../lib/format";
 
+function isLowStock(product) {
+  return product.low_stock_threshold != null && product.stock <= product.low_stock_threshold;
+}
+
 export function AdminProductsView({ showToast }) {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
@@ -13,7 +17,7 @@ export function AdminProductsView({ showToast }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showNewForm, setShowNewForm] = useState(false);
-  const emptyForm = { name: "", description: "", price: "", stock: "", image_url: "" };
+  const emptyForm = { name: "", description: "", price: "", stock: "", image_url: "", low_stock_threshold: "" };
   const [newForm, setNewForm] = useState(emptyForm);
   const [managingImagesFor, setManagingImagesFor] = useState(null);
   const [productImages, setProductImages] = useState([]);
@@ -28,7 +32,12 @@ export function AdminProductsView({ showToast }) {
     e.preventDefault();
     setError(null);
     try {
-      const created = await createProduct(token, { ...newForm, price: Number(newForm.price), stock: Number(newForm.stock) });
+      const created = await createProduct(token, {
+        ...newForm,
+        price: Number(newForm.price),
+        stock: Number(newForm.stock),
+        low_stock_threshold: newForm.low_stock_threshold === "" ? null : Number(newForm.low_stock_threshold),
+      });
       setProducts((prev) => [...prev, created]);
       setNewForm(emptyForm);
       setShowNewForm(false);
@@ -40,13 +49,25 @@ export function AdminProductsView({ showToast }) {
 
   function startEdit(product) {
     setEditingId(product.id);
-    setEditForm({ name: product.name, description: product.description || "", price: product.price, stock: product.stock, image_url: product.image_url || "" });
+    setEditForm({
+      name: product.name,
+      description: product.description || "",
+      price: product.price,
+      stock: product.stock,
+      image_url: product.image_url || "",
+      low_stock_threshold: product.low_stock_threshold ?? "",
+    });
   }
 
   async function handleUpdate(productId) {
     setError(null);
     try {
-      const updated = await updateProduct(token, productId, { ...editForm, price: Number(editForm.price), stock: Number(editForm.stock) });
+      const updated = await updateProduct(token, productId, {
+        ...editForm,
+        price: Number(editForm.price),
+        stock: Number(editForm.stock),
+        low_stock_threshold: editForm.low_stock_threshold === "" ? null : Number(editForm.low_stock_threshold),
+      });
       setProducts((prev) => prev.map((p) => (p.id === productId ? updated : p)));
       setEditingId(null);
       if (showToast) showToast("商品を更新しました");
@@ -139,6 +160,10 @@ export function AdminProductsView({ showToast }) {
               <FieldLabel>在庫数</FieldLabel>
               <input style={inputStyle} type="number" placeholder="0" value={newForm.stock} onChange={(e) => setNewForm({ ...newForm, stock: e.target.value })} required />
             </div>
+            <div>
+              <FieldLabel>低在庫しきい値（任意）</FieldLabel>
+              <input style={inputStyle} type="number" placeholder="未設定" value={newForm.low_stock_threshold} onChange={(e) => setNewForm({ ...newForm, low_stock_threshold: e.target.value })} />
+            </div>
           </div>
           <div style={{ marginBottom: 16 }}>
             <FieldLabel>説明</FieldLabel>
@@ -152,7 +177,7 @@ export function AdminProductsView({ showToast }) {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: `1px solid ${C.border}` }}>
-              {["商品名", "説明", "価格", "在庫", "操作"].map((h, i) => (
+              {["商品名", "説明", "価格", "在庫", "しきい値", "操作"].map((h, i) => (
                 <th key={h} style={{ textAlign: i >= 2 ? "right" : "left", padding: "14px 20px", fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
@@ -165,6 +190,7 @@ export function AdminProductsView({ showToast }) {
                   <td style={{ padding: "12px 20px" }}><input style={inputStyle} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} /></td>
                   <td style={{ padding: "12px 20px" }}><input style={{ ...inputStyle, textAlign: "right" }} type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} /></td>
                   <td style={{ padding: "12px 20px" }}><input style={{ ...inputStyle, textAlign: "right" }} type="number" value={editForm.stock} onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })} /></td>
+                  <td style={{ padding: "12px 20px" }}><input style={{ ...inputStyle, textAlign: "right" }} type="number" placeholder="未設定" value={editForm.low_stock_threshold} onChange={(e) => setEditForm({ ...editForm, low_stock_threshold: e.target.value })} /></td>
                   <td style={{ padding: "12px 20px", textAlign: "right" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
                       <button className="btn-primary" onClick={() => handleUpdate(product.id)} style={{ padding: "7px 14px", fontSize: 13, borderRadius: 8 }}>保存</button>
@@ -187,7 +213,13 @@ export function AdminProductsView({ showToast }) {
                     <span style={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.description}</span>
                   </td>
                   <td style={{ padding: "16px 20px", textAlign: "right", fontSize: 15, fontWeight: 700, color: C.text }}>¥{fmt(product.price)}</td>
-                  <td style={{ padding: "16px 20px", textAlign: "right", fontSize: 14, color: C.sec }}>{product.stock}</td>
+                  <td style={{ padding: "16px 20px", textAlign: "right", fontSize: 14, color: isLowStock(product) ? C.red : C.sec }}>
+                    {product.stock}
+                    {isLowStock(product) && (
+                      <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: C.red, background: "rgba(255,107,107,0.12)", borderRadius: 6, padding: "2px 6px" }}>低在庫</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "16px 20px", textAlign: "right", fontSize: 13, color: C.muted }}>{product.low_stock_threshold ?? "-"}</td>
                   <td style={{ padding: "16px 20px", textAlign: "right" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
                       <button
@@ -202,7 +234,7 @@ export function AdminProductsView({ showToast }) {
                 </tr>
                 {managingImagesFor === product.id && (
                   <tr key={`images-${product.id}`}>
-                    <td colSpan={5} style={{ padding: "0 20px 20px" }}>
+                    <td colSpan={6} style={{ padding: "0 20px 20px" }}>
                       <div style={{ background: C.dark, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animation: "fadeUp 0.2s ease" }}>
                         <p style={{ fontSize: 12, fontWeight: 700, color: C.sec, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>追加画像管理（メイン画像は商品編集で変更）</p>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>

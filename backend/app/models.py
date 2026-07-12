@@ -16,6 +16,7 @@ class Product(Base):
     stock = Column(Integer, nullable=False, default=0)
     image_url = Column(String, nullable=True)
     category = Column(String, nullable=True)
+    low_stock_threshold = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     images = relationship("ProductImage", back_populates="product", order_by="ProductImage.display_order", cascade="all, delete-orphan")

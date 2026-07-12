@@ -19,6 +19,7 @@ classDiagram
         +int stock
         +string image_url
         +string category
+        +int low_stock_threshold
         +datetime created_at
     }
     class product_images {
@@ -131,6 +132,7 @@ classDiagram
 | stock | INTEGER | | NOT NULL | 0 | 在庫数 |
 | image_url | STRING | | NULL可 | なし | メイン画像URL |
 | category | STRING | | NULL可 | なし | カテゴリ |
+| low_stock_threshold | INTEGER | | NULL可 | なし | 低在庫アラートのしきい値。NULLの場合はしきい値未設定として低在庫判定の対象外(2026-07-12追加、F-034) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 
 ### product_images テーブル

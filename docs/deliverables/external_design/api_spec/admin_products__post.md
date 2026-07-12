@@ -18,6 +18,7 @@
 | stock | integer | 必須 | 在庫数 |
 | image_url | string \| null | 任意 | メイン画像URL |
 | category | string \| null | 任意 | カテゴリ |
+| low_stock_threshold | integer \| null | 任意 | 低在庫アラートのしきい値(未設定の場合は低在庫判定の対象外、2026-07-12追加、F-034) |
 
 **レスポンス(201)**: 商品オブジェクト(`GET /products`の要素と同一形式)
 

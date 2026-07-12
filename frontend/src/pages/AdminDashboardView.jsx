@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { fetchAnalyticsSummary, fetchCategorySales, fetchSalesByDate, fetchTopProducts } from "../api/analytics";
+import { fetchLowStockProducts } from "../api/admin";
 import { useAuth } from "../AuthContext";
 import { C, CHART_COLORS } from "../lib/constants";
 import { fmt } from "../lib/format";
@@ -14,6 +15,7 @@ export function AdminDashboardView() {
   const [salesByDate, setSalesByDate] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [categorySales, setCategorySales] = useState([]);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,11 +24,13 @@ export function AdminDashboardView() {
       fetchSalesByDate(token, 30),
       fetchTopProducts(token),
       fetchCategorySales(token),
-    ]).then(([s, d, p, c]) => {
+      fetchLowStockProducts(token),
+    ]).then(([s, d, p, c, lowStock]) => {
       setSummary(s);
       setSalesByDate(d);
       setTopProducts(p);
       setCategorySales(c);
+      setLowStockProducts(lowStock);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [token]);
 
@@ -65,6 +69,22 @@ export function AdminDashboardView() {
         <KpiCard label="注文数" value={`${summary?.order_count || 0}件`} />
         <KpiCard label="平均注文額" value={`¥${fmt(summary?.avg_order || 0)}`} />
         <KpiCard label="ユーザー数" value={`${summary?.user_count || 0}人`} />
+      </div>
+
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 28 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16 }}>低在庫アラート</h2>
+        {lowStockProducts.length === 0 ? (
+          <p style={{ color: C.muted, fontSize: 13 }}>現在低在庫の商品はありません</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {lowStockProducts.map((p) => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: C.text, fontWeight: 600 }}>{p.name}</span>
+                <span style={{ color: C.red }}>在庫 {p.stock} / しきい値 {p.low_stock_threshold}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {noData ? (

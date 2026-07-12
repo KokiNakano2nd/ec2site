@@ -79,7 +79,7 @@ classDiagram
   - `coupons.py`: クーポンコード検証(公開)
   - `admin_coupons.py`: クーポン管理(CRUD)
   - `favorites.py`: お気に入りCRUD
-  - `admin_products.py`: 商品管理CRUD・商品画像管理CRUD
+  - `admin_products.py`: 商品管理CRUD・商品画像管理CRUD・低在庫商品一覧取得(2026-07-12追加、F-034)
   - `admin_analytics.py`: 売上サマリー・日別売上・売れ筋商品・カテゴリ別売上
   - `addresses.py`: 配送先住所CRUD・デフォルト設定
   - `payment.py`: Stripe決済設定確認(`/config`)・チェックアウトセッション作成・決済完了処理
@@ -111,6 +111,7 @@ classDiagram
 | `GET /favorites`, `POST /favorites/{id}`, `DELETE /favorites/{id}` | `routers/favorites.py` | `models`, `schemas`, `auth` |
 | `POST /admin/products`, `PATCH /admin/products/{id}`, `DELETE /admin/products/{id}` | `routers/admin_products.py` | `models`, `schemas`, `auth` |
 | `POST /admin/products/{id}/images`, `PATCH /admin/product-images/{id}`, `DELETE /admin/product-images/{id}` | `routers/admin_products.py` | `models`, `schemas`, `auth` |
+| `GET /admin/products/low-stock` | `routers/admin_products.py` | `models`, `schemas`, `auth` |
 | `GET /admin/analytics/summary`, `sales-by-date`, `top-products`, `category-sales` | `routers/admin_analytics.py` | `models`, `auth` |
 | `GET /addresses`, `POST /addresses`, `PATCH /addresses/{id}`, `DELETE /addresses/{id}`, `POST /addresses/{id}/default` | `routers/addresses.py` | `models`, `schemas`, `auth` |
 | `GET /config`, `POST /payment/checkout`, `POST /payment/complete` | `routers/payment.py` | `models`, `schemas`, `auth`, `services/order_calc`, `main`(`stripe_lib`・`STRIPE_SECRET_KEY`・注文確認メール) |

@@ -42,6 +42,16 @@ export async function deleteProduct(token, productId) {
   }
 }
 
+export async function fetchLowStockProducts(token) {
+  const res = await fetch(`${API_URL}/admin/products/low-stock`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("低在庫商品の取得に失敗しました");
+  }
+  return res.json();
+}
+
 export async function fetchAdminOrders(token) {
   const res = await fetch(`${API_URL}/admin/orders`, {
     headers: { Authorization: `Bearer ${token}` },

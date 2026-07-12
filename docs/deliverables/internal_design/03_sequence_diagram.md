@@ -336,6 +336,27 @@ sequenceDiagram
 - 却下時は在庫・クーポン使用回数・返金処理を行わない(UC-008備考参照)
 - 却下時に送信するメールは`send_status_notification`ではなく`send_return_rejected_email`(N-004): ステータスが`return_requested`→`shipped`に戻るため、汎用のステータス変更通知では顧客に「発送済み」という誤解を招く文面になってしまうことへの対応(`04_notification_design.md`参照)
 
+## 商品管理業務: 低在庫アラートを確認する(管理者)(2026-07-12追加)
+
+`GET /admin/products/low-stock`(`backend/app/routers/admin_products.py`、F-034)に対応する。DB検索のみで完結する単純な処理だが、S-101(商品管理画面)・S-104(ダッシュボード画面)の両方から呼び出される共通処理のため図示する。
+
+```mermaid
+sequenceDiagram
+    actor 管理者
+    participant Frontend as フロントエンド(AdminProductsView / AdminDashboardView)
+    participant API as routers/admin_products.py(/admin/products/low-stock)
+    participant DB as DB(products)
+
+    管理者->>Frontend: 商品管理画面またはダッシュボードを開く
+    Frontend->>API: GET /admin/products/low-stock
+    API->>DB: low_stock_thresholdがNULLでなく、stock <= low_stock_thresholdの商品を取得する
+    DB-->>API: 商品一覧(0件の場合もある)
+    API-->>Frontend: 200 ProductOutの配列
+    Frontend->>管理者: 低在庫の商品をバッジ/アラートセクションに表示する(0件の場合は「現在低在庫の商品はありません」)
+```
+
+- しきい値(`low_stock_threshold`)自体の設定・変更は既存の`POST /admin/products` / `PATCH /admin/products/{id}`(F-020/F-021)のリクエストボディに項目が1つ増えるのみで、別シーケンスは起こさない
+
 ## 補足: UC-002とUC-003の内部処理の違い
 
 - UC-003(`POST /orders`)はクーポンコードが無効な場合に**400エラーで処理を中断する**が、UC-002(`POST /payment/checkout` / `POST /payment/complete`)はクーポンコードが無効な場合に**エラーにせず割引なしで処理を続行する**(`if coupon:` のみで判定し、`else`のエラー処理がない)。この差異は実装上の挙動であり、意図的な仕様か実装漏れかは要件定義フェーズ・業務エキスパートへの確認が必要な点として、`04_error_handling_design.md`に改善提案として記載する。

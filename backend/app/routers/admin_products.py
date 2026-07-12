@@ -20,6 +20,21 @@ def admin_create_product(
     return product
 
 
+@router.get("/admin/products/low-stock", response_model=list[schemas.ProductOut])
+def admin_list_low_stock_products(
+    admin: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(models.Product)
+        .filter(
+            models.Product.low_stock_threshold.isnot(None),
+            models.Product.stock <= models.Product.low_stock_threshold,
+        )
+        .all()
+    )
+
+
 @router.patch("/admin/products/{product_id}", response_model=schemas.ProductOut)
 def admin_update_product(
     product_id: int,

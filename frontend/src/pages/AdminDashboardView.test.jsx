@@ -12,6 +12,11 @@ vi.mock("../api/analytics", () => ({
   fetchTopProducts: (...args) => fetchTopProductsMock(...args),
 }));
 
+const fetchLowStockProductsMock = vi.fn();
+vi.mock("../api/admin", () => ({
+  fetchLowStockProducts: (...args) => fetchLowStockProductsMock(...args),
+}));
+
 const useAuthMock = vi.fn();
 vi.mock("../AuthContext", () => ({
   useAuth: () => useAuthMock(),
@@ -30,6 +35,7 @@ describe("AdminDashboardView", () => {
     fetchSalesByDateMock.mockReset().mockResolvedValue([]);
     fetchTopProductsMock.mockReset().mockResolvedValue([]);
     fetchCategorySalesMock.mockReset().mockResolvedValue([]);
+    fetchLowStockProductsMock.mockReset().mockResolvedValue([]);
   });
 
   it("renders KPI values from the analytics summary", async () => {
@@ -44,5 +50,19 @@ describe("AdminDashboardView", () => {
   it("shows a no-data message when there is no chart data", async () => {
     render(<AdminDashboardView />);
     expect(await screen.findByText("注文データがまだありません。")).toBeInTheDocument();
+  });
+
+  it("shows a no-alert message when there are no low-stock products", async () => {
+    render(<AdminDashboardView />);
+    expect(await screen.findByText("現在低在庫の商品はありません")).toBeInTheDocument();
+  });
+
+  it("lists low-stock products when there are any", async () => {
+    fetchLowStockProductsMock.mockReset().mockResolvedValue([
+      { id: 1, name: "低在庫商品", stock: 2, low_stock_threshold: 5 },
+    ]);
+    render(<AdminDashboardView />);
+    expect(await screen.findByText("低在庫商品")).toBeInTheDocument();
+    expect(screen.getByText("在庫 2 / しきい値 5")).toBeInTheDocument();
   });
 });

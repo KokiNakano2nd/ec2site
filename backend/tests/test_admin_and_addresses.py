@@ -38,6 +38,36 @@ def test_non_admin_cannot_manage_products(client, auth_headers):
     assert res.status_code == 403
 
 
+def test_low_stock_products_lists_only_products_at_or_below_threshold(client, admin_headers):
+    below = client.post(
+        "/admin/products",
+        json={"name": "低在庫商品", "price": 1000, "stock": 3, "low_stock_threshold": 5},
+        headers=admin_headers,
+    ).json()
+    above = client.post(
+        "/admin/products",
+        json={"name": "在庫十分商品", "price": 1000, "stock": 10, "low_stock_threshold": 5},
+        headers=admin_headers,
+    ).json()
+    no_threshold = client.post(
+        "/admin/products",
+        json={"name": "しきい値未設定商品", "price": 1000, "stock": 0},
+        headers=admin_headers,
+    ).json()
+
+    res = client.get("/admin/products/low-stock", headers=admin_headers)
+    assert res.status_code == 200
+    ids = [p["id"] for p in res.json()]
+    assert below["id"] in ids
+    assert above["id"] not in ids
+    assert no_threshold["id"] not in ids
+
+
+def test_non_admin_cannot_view_low_stock_products(client, auth_headers):
+    res = client.get("/admin/products/low-stock", headers=auth_headers)
+    assert res.status_code == 403
+
+
 def test_admin_coupon_crud(client, admin_headers):
     create_res = client.post(
         "/admin/coupons",

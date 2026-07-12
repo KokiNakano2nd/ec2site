@@ -27,7 +27,7 @@ vi.mock("../AuthContext", () => ({
 
 import { AdminProductsView } from "./AdminProductsView";
 
-const product = { id: 1, name: "既存商品", description: "説明", price: 1000, stock: 5, image_url: "https://example.com/img.png", images: [] };
+const product = { id: 1, name: "既存商品", description: "説明", price: 1000, stock: 5, image_url: "https://example.com/img.png", low_stock_threshold: null, images: [] };
 
 describe("AdminProductsView", () => {
   beforeEach(() => {
@@ -76,6 +76,23 @@ describe("AdminProductsView", () => {
 
     expect(updateProductMock).toHaveBeenCalledWith("admin-token", 1, expect.objectContaining({ name: "更新商品" }));
     expect(await screen.findByText("更新商品")).toBeInTheDocument();
+  });
+
+  it("shows a low-stock badge when stock is at or below the threshold", async () => {
+    fetchProductsMock.mockReset().mockResolvedValue([
+      { ...product, id: 3, name: "低在庫商品", stock: 2, low_stock_threshold: 5 },
+    ]);
+    render(<AdminProductsView showToast={vi.fn()} />);
+
+    await screen.findByText("低在庫商品");
+    expect(screen.getByText("低在庫")).toBeInTheDocument();
+  });
+
+  it("does not show a low-stock badge when threshold is unset", async () => {
+    render(<AdminProductsView showToast={vi.fn()} />);
+
+    await screen.findByText("既存商品");
+    expect(screen.queryByText("低在庫")).not.toBeInTheDocument();
   });
 
   it("deletes a product via deleteProduct", async () => {
