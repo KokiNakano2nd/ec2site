@@ -91,6 +91,7 @@ class Coupon(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     max_uses = Column(Integer, nullable=True)
     used_count = Column(Integer, nullable=False, default=0)
+    low_remaining_uses_threshold = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

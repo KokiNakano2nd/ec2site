@@ -357,6 +357,27 @@ sequenceDiagram
 
 - しきい値(`low_stock_threshold`)自体の設定・変更は既存の`POST /admin/products` / `PATCH /admin/products/{id}`(F-020/F-021)のリクエストボディに項目が1つ増えるのみで、別シーケンスは起こさない
 
+## クーポン管理業務: クーポン残数アラートを確認する(管理者)(2026-07-13追加)
+
+`GET /admin/coupons/low-remaining-uses`(`backend/app/routers/admin_coupons.py`、F-035)に対応する。低在庫アラートと同型のDB検索のみで完結する単純な処理だが、S-102(クーポン管理画面)・S-104(ダッシュボード画面)の両方から呼び出される共通処理のため図示する。
+
+```mermaid
+sequenceDiagram
+    actor 管理者
+    participant Frontend as フロントエンド(AdminCouponsView / AdminDashboardView)
+    participant API as routers/admin_coupons.py(/admin/coupons/low-remaining-uses)
+    participant DB as DB(coupons)
+
+    管理者->>Frontend: クーポン管理画面またはダッシュボードを開く
+    Frontend->>API: GET /admin/coupons/low-remaining-uses
+    API->>DB: max_usesとlow_remaining_uses_thresholdが共にNULLでなく、(max_uses - used_count) <= low_remaining_uses_thresholdのクーポンを取得する
+    DB-->>API: クーポン一覧(0件の場合もある)
+    API-->>Frontend: 200 CouponOutの配列
+    Frontend->>管理者: 残数僅少のクーポンをバッジ/アラートセクションに表示する(0件の場合は「残数僅少のクーポンはありません」)
+```
+
+- しきい値(`low_remaining_uses_threshold`)自体の設定・変更は、クーポン発行時(`POST /admin/coupons`、F-023)、または既存の`PATCH /admin/coupons/{id}`(F-024)のリクエストボディに項目が加わる形で行い、別シーケンスは起こさない
+
 ## 補足: UC-002とUC-003の内部処理の違い
 
 - UC-003(`POST /orders`)はクーポンコードが無効な場合に**400エラーで処理を中断する**が、UC-002(`POST /payment/checkout` / `POST /payment/complete`)はクーポンコードが無効な場合に**エラーにせず割引なしで処理を続行する**(`if coupon:` のみで判定し、`else`のエラー処理がない)。この差異は実装上の挙動であり、意図的な仕様か実装漏れかは要件定義フェーズ・業務エキスパートへの確認が必要な点として、`04_error_handling_design.md`に改善提案として記載する。

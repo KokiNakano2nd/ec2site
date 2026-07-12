@@ -6,11 +6,13 @@ const fetchAdminCouponsMock = vi.fn();
 const createAdminCouponMock = vi.fn();
 const toggleAdminCouponMock = vi.fn();
 const deleteAdminCouponMock = vi.fn();
+const updateAdminCouponMock = vi.fn();
 vi.mock("../api/coupons", () => ({
   fetchAdminCoupons: (...args) => fetchAdminCouponsMock(...args),
   createAdminCoupon: (...args) => createAdminCouponMock(...args),
   toggleAdminCoupon: (...args) => toggleAdminCouponMock(...args),
   deleteAdminCoupon: (...args) => deleteAdminCouponMock(...args),
+  updateAdminCoupon: (...args) => updateAdminCouponMock(...args),
 }));
 
 const useAuthMock = vi.fn();
@@ -32,6 +34,7 @@ describe("AdminCouponsView", () => {
     createAdminCouponMock.mockReset();
     toggleAdminCouponMock.mockReset();
     deleteAdminCouponMock.mockReset();
+    updateAdminCouponMock.mockReset();
   });
 
   it("renders coupons from fetchAdminCoupons", async () => {
@@ -77,5 +80,35 @@ describe("AdminCouponsView", () => {
 
     expect(deleteAdminCouponMock).toHaveBeenCalledWith("admin-token", 1);
     await waitFor(() => expect(screen.queryByText("SUMMER10")).not.toBeInTheDocument());
+  });
+
+  it("shows a low-remaining-uses badge when remaining uses are at or below the threshold", async () => {
+    fetchAdminCouponsMock.mockReset().mockResolvedValue([
+      { ...coupon, id: 3, code: "LOWREMAIN", max_uses: 10, used_count: 8, low_remaining_uses_threshold: 5 },
+    ]);
+    render(<AdminCouponsView showToast={vi.fn()} />);
+
+    await screen.findByText("LOWREMAIN");
+    expect(screen.getByText("残数僅少")).toBeInTheDocument();
+  });
+
+  it("does not show a low-remaining-uses badge when threshold is unset", async () => {
+    render(<AdminCouponsView showToast={vi.fn()} />);
+
+    await screen.findByText("SUMMER10");
+    expect(screen.queryByText("残数僅少")).not.toBeInTheDocument();
+  });
+
+  it("updates the low-remaining-uses threshold via updateAdminCoupon", async () => {
+    const user = userEvent.setup();
+    updateAdminCouponMock.mockResolvedValue({ ...coupon, low_remaining_uses_threshold: 5 });
+    render(<AdminCouponsView showToast={vi.fn()} />);
+
+    await screen.findByText("SUMMER10");
+    const thresholdInput = screen.getByPlaceholderText("未設定");
+    await user.type(thresholdInput, "5");
+    await user.tab();
+
+    expect(updateAdminCouponMock).toHaveBeenCalledWith("admin-token", 1, { low_remaining_uses_threshold: 5 });
   });
 });

@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import { fetchAnalyticsSummary, fetchCategorySales, fetchSalesByDate, fetchTopProducts } from "../api/analytics";
 import { fetchLowStockProducts } from "../api/admin";
+import { fetchLowRemainingUsesCoupons } from "../api/coupons";
 import { useAuth } from "../AuthContext";
 import { C, CHART_COLORS } from "../lib/constants";
 import { fmt } from "../lib/format";
@@ -16,6 +17,7 @@ export function AdminDashboardView() {
   const [topProducts, setTopProducts] = useState([]);
   const [categorySales, setCategorySales] = useState([]);
   const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [lowRemainingUsesCoupons, setLowRemainingUsesCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,12 +27,14 @@ export function AdminDashboardView() {
       fetchTopProducts(token),
       fetchCategorySales(token),
       fetchLowStockProducts(token),
-    ]).then(([s, d, p, c, lowStock]) => {
+      fetchLowRemainingUsesCoupons(token),
+    ]).then(([s, d, p, c, lowStock, lowRemainingCoupons]) => {
       setSummary(s);
       setSalesByDate(d);
       setTopProducts(p);
       setCategorySales(c);
       setLowStockProducts(lowStock);
+      setLowRemainingUsesCoupons(lowRemainingCoupons);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [token]);
 
@@ -81,6 +85,22 @@ export function AdminDashboardView() {
               <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
                 <span style={{ color: C.text, fontWeight: 600 }}>{p.name}</span>
                 <span style={{ color: C.red }}>在庫 {p.stock} / しきい値 {p.low_stock_threshold}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 28 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16 }}>クーポン残数アラート</h2>
+        {lowRemainingUsesCoupons.length === 0 ? (
+          <p style={{ color: C.muted, fontSize: 13 }}>残数僅少のクーポンはありません</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {lowRemainingUsesCoupons.map((c) => (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: C.text, fontWeight: 600, fontFamily: "monospace" }}>{c.code}</span>
+                <span style={{ color: C.red }}>残り {c.max_uses - c.used_count} 回 / しきい値 {c.low_remaining_uses_threshold}</span>
               </div>
             ))}
           </div>

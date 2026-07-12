@@ -39,6 +39,24 @@ export async function toggleAdminCoupon(token, couponId) {
   return res.json();
 }
 
+export async function updateAdminCoupon(token, couponId, data) {
+  const res = await fetch(`${API_URL}/admin/coupons/${couponId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("クーポンの更新に失敗しました");
+  return res.json();
+}
+
+export async function fetchLowRemainingUsesCoupons(token) {
+  const res = await fetch(`${API_URL}/admin/coupons/low-remaining-uses`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("残数僅少クーポンの取得に失敗しました");
+  return res.json();
+}
+
 export async function deleteAdminCoupon(token, couponId) {
   const res = await fetch(`${API_URL}/admin/coupons/${couponId}`, {
     method: "DELETE",

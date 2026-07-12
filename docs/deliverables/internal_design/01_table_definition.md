@@ -64,6 +64,7 @@ classDiagram
         +bool is_active
         +int max_uses
         +int used_count
+        +int low_remaining_uses_threshold
         +datetime created_at
     }
     class orders {
@@ -204,6 +205,7 @@ classDiagram
 | is_active | BOOLEAN | | NOT NULL | true | 有効フラグ |
 | max_uses | INTEGER | | NULL可 | なし | 使用回数上限(無制限の場合NULL) |
 | used_count | INTEGER | | NOT NULL | 0 | 使用回数 |
+| low_remaining_uses_threshold | INTEGER | | NULL可 | なし | 残数アラートしきい値。NULLの場合はしきい値未設定として残数僅少判定の対象外(2026-07-13追加、F-035) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 
 - インデックス: `code` に一意インデックス(`unique=True, index=True`)を実装で明示的に付与している。

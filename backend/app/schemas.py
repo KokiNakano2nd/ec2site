@@ -137,6 +137,12 @@ class CouponCreate(BaseModel):
     discount_type: str
     discount_value: float
     max_uses: int | None = None
+    low_remaining_uses_threshold: int | None = None
+
+
+class CouponUpdate(BaseModel):
+    is_active: bool | None = None
+    low_remaining_uses_threshold: int | None = None
 
 
 class CouponOut(BaseModel):
@@ -149,6 +155,7 @@ class CouponOut(BaseModel):
     is_active: bool
     max_uses: int | None = None
     used_count: int
+    low_remaining_uses_threshold: int | None = None
     created_at: datetime
 
 

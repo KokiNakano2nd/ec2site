@@ -77,7 +77,7 @@ classDiagram
   - `orders.py`: 顧客側の注文作成・一覧・取得・キャンセル・返品申請
   - `admin_orders.py`: 管理者による返品承認/却下・注文ステータス変更・注文一覧
   - `coupons.py`: クーポンコード検証(公開)
-  - `admin_coupons.py`: クーポン管理(CRUD)
+  - `admin_coupons.py`: クーポン管理(CRUD)・残数僅少クーポン一覧取得(2026-07-13追加、F-035)
   - `favorites.py`: お気に入りCRUD
   - `admin_products.py`: 商品管理CRUD・商品画像管理CRUD・低在庫商品一覧取得(2026-07-12追加、F-034)
   - `admin_analytics.py`: 売上サマリー・日別売上・売れ筋商品・カテゴリ別売上
@@ -108,6 +108,7 @@ classDiagram
 | `GET /admin/orders`, `PATCH /admin/orders/{id}/status` | `routers/admin_orders.py` | `models`, `schemas`, `auth`, `main`(ステータス変更通知メール) |
 | `GET /coupons/validate` | `routers/coupons.py` | `models`, `schemas` |
 | `GET /admin/coupons`, `POST /admin/coupons`, `PATCH /admin/coupons/{id}`, `DELETE /admin/coupons/{id}` | `routers/admin_coupons.py` | `models`, `schemas`, `auth` |
+| `GET /admin/coupons/low-remaining-uses` | `routers/admin_coupons.py` | `models`, `schemas`, `auth` |
 | `GET /favorites`, `POST /favorites/{id}`, `DELETE /favorites/{id}` | `routers/favorites.py` | `models`, `schemas`, `auth` |
 | `POST /admin/products`, `PATCH /admin/products/{id}`, `DELETE /admin/products/{id}` | `routers/admin_products.py` | `models`, `schemas`, `auth` |
 | `POST /admin/products/{id}/images`, `PATCH /admin/product-images/{id}`, `DELETE /admin/product-images/{id}` | `routers/admin_products.py` | `models`, `schemas`, `auth` |

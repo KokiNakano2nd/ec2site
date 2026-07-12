@@ -41,6 +41,7 @@
 | 商品管理業務(管理者向け) | /admin/products/{product_id}/images, /admin/product-images | PATCH | `/admin/product-images/{image_id}` | 商品画像を編集する | [admin_product_images_image_id__patch.md](api_spec/admin_product_images_image_id__patch.md) |
 | 商品管理業務(管理者向け) | /admin/products/{product_id}/images, /admin/product-images | DELETE | `/admin/product-images/{image_id}` | 商品画像を削除する | [admin_product_images_image_id__delete.md](api_spec/admin_product_images_image_id__delete.md) |
 | 商品管理業務(管理者向け) | /admin/products/low-stock | GET | `/admin/products/low-stock` | 低在庫の商品一覧を取得する | [admin_products_low_stock__get.md](api_spec/admin_products_low_stock__get.md) |
+| クーポン管理業務(管理者向け) | /admin/coupons/low-remaining-uses | GET | `/admin/coupons/low-remaining-uses` | 残数僅少のクーポン一覧を取得する | [admin_coupons_low_remaining_uses__get.md](api_spec/admin_coupons_low_remaining_uses__get.md) |
 | クーポン管理業務(管理者向け) | /admin/coupons | GET | `/admin/coupons` | クーポン一覧を取得する | [admin_coupons__get.md](api_spec/admin_coupons__get.md) |
 | クーポン管理業務(管理者向け) | /admin/coupons | POST | `/admin/coupons` | クーポンを発行する | [admin_coupons__post.md](api_spec/admin_coupons__post.md) |
 | クーポン管理業務(管理者向け) | /admin/coupons | PATCH | `/admin/coupons/{coupon_id}` | クーポンの有効/無効を切り替える | [admin_coupons_coupon_id__patch.md](api_spec/admin_coupons_coupon_id__patch.md) |

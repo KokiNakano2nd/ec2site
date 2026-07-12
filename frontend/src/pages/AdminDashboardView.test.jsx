@@ -17,6 +17,11 @@ vi.mock("../api/admin", () => ({
   fetchLowStockProducts: (...args) => fetchLowStockProductsMock(...args),
 }));
 
+const fetchLowRemainingUsesCouponsMock = vi.fn();
+vi.mock("../api/coupons", () => ({
+  fetchLowRemainingUsesCoupons: (...args) => fetchLowRemainingUsesCouponsMock(...args),
+}));
+
 const useAuthMock = vi.fn();
 vi.mock("../AuthContext", () => ({
   useAuth: () => useAuthMock(),
@@ -36,6 +41,7 @@ describe("AdminDashboardView", () => {
     fetchTopProductsMock.mockReset().mockResolvedValue([]);
     fetchCategorySalesMock.mockReset().mockResolvedValue([]);
     fetchLowStockProductsMock.mockReset().mockResolvedValue([]);
+    fetchLowRemainingUsesCouponsMock.mockReset().mockResolvedValue([]);
   });
 
   it("renders KPI values from the analytics summary", async () => {
@@ -64,5 +70,19 @@ describe("AdminDashboardView", () => {
     render(<AdminDashboardView />);
     expect(await screen.findByText("低在庫商品")).toBeInTheDocument();
     expect(screen.getByText("在庫 2 / しきい値 5")).toBeInTheDocument();
+  });
+
+  it("shows a no-alert message when there are no low-remaining-uses coupons", async () => {
+    render(<AdminDashboardView />);
+    expect(await screen.findByText("残数僅少のクーポンはありません")).toBeInTheDocument();
+  });
+
+  it("lists low-remaining-uses coupons when there are any", async () => {
+    fetchLowRemainingUsesCouponsMock.mockReset().mockResolvedValue([
+      { id: 1, code: "SUMMER10", max_uses: 10, used_count: 8, low_remaining_uses_threshold: 5 },
+    ]);
+    render(<AdminDashboardView />);
+    expect(await screen.findByText("SUMMER10")).toBeInTheDocument();
+    expect(screen.getByText("残り 2 回 / しきい値 5")).toBeInTheDocument();
   });
 });

@@ -16,6 +16,7 @@
 | discount_type | string | 必須 | `percentage`または`fixed` |
 | discount_value | float | 必須 | 割引値 |
 | max_uses | integer \| null | 任意 | 使用回数上限(無制限の場合null) |
+| low_remaining_uses_threshold | integer \| null | 任意 | 残数アラートしきい値(2026-07-13追加、F-035)。未設定時はアラート対象外 |
 
 **レスポンス(201)**: クーポンオブジェクト(`is_active: true`, `used_count: 0`)
 

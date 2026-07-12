@@ -110,6 +110,78 @@ def test_admin_coupon_duplicate_code_returns_400(client, admin_headers):
     assert res.status_code == 400
 
 
+def test_admin_coupon_patch_can_set_low_remaining_uses_threshold(client, admin_headers):
+    coupon = client.post(
+        "/admin/coupons",
+        json={"code": "THRESHOLDSET", "discount_type": "fixed", "discount_value": 100, "max_uses": 10},
+        headers=admin_headers,
+    ).json()
+
+    res = client.patch(
+        f"/admin/coupons/{coupon['id']}",
+        json={"low_remaining_uses_threshold": 3},
+        headers=admin_headers,
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["low_remaining_uses_threshold"] == 3
+    # Setting the threshold alone (without "is_active") preserves the toggle-on-omission behavior.
+    assert body["is_active"] is False
+
+
+def test_low_remaining_uses_coupons_lists_only_coupons_at_or_below_threshold(client, admin_headers):
+    below = client.post(
+        "/admin/coupons",
+        json={
+            "code": "LOWREMAIN",
+            "discount_type": "fixed",
+            "discount_value": 100,
+            "max_uses": 5,
+            "low_remaining_uses_threshold": 5,
+        },
+        headers=admin_headers,
+    ).json()
+    above = client.post(
+        "/admin/coupons",
+        json={
+            "code": "PLENTYLEFT",
+            "discount_type": "fixed",
+            "discount_value": 100,
+            "max_uses": 100,
+            "low_remaining_uses_threshold": 5,
+        },
+        headers=admin_headers,
+    ).json()
+    no_threshold = client.post(
+        "/admin/coupons",
+        json={"code": "NOTHRESHOLD", "discount_type": "fixed", "discount_value": 100, "max_uses": 5},
+        headers=admin_headers,
+    ).json()
+    unlimited = client.post(
+        "/admin/coupons",
+        json={
+            "code": "UNLIMITED",
+            "discount_type": "fixed",
+            "discount_value": 100,
+            "low_remaining_uses_threshold": 5,
+        },
+        headers=admin_headers,
+    ).json()
+
+    res = client.get("/admin/coupons/low-remaining-uses", headers=admin_headers)
+    assert res.status_code == 200
+    ids = [c["id"] for c in res.json()]
+    assert below["id"] in ids
+    assert above["id"] not in ids
+    assert no_threshold["id"] not in ids
+    assert unlimited["id"] not in ids
+
+
+def test_non_admin_cannot_view_low_remaining_uses_coupons(client, auth_headers):
+    res = client.get("/admin/coupons/low-remaining-uses", headers=auth_headers)
+    assert res.status_code == 403
+
+
 def test_admin_update_order_status_and_list(client, auth_headers, admin_headers):
     product = client.get("/products", headers=auth_headers).json()[0]
     client.post("/cart", json={"product_id": product["id"], "quantity": 1}, headers=auth_headers)

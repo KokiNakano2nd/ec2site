@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createAdminCoupon, deleteAdminCoupon, fetchAdminCoupons, toggleAdminCoupon } from "../api/coupons";
+import { createAdminCoupon, deleteAdminCoupon, fetchAdminCoupons, toggleAdminCoupon, updateAdminCoupon } from "../api/coupons";
 import { useAuth } from "../AuthContext";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
@@ -10,7 +10,7 @@ export function AdminCouponsView({ showToast }) {
   const [coupons, setCoupons] = useState([]);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const emptyForm = { code: "", discount_type: "percentage", discount_value: "", max_uses: "" };
+  const emptyForm = { code: "", discount_type: "percentage", discount_value: "", max_uses: "", low_remaining_uses_threshold: "" };
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export function AdminCouponsView({ showToast }) {
         discount_type: form.discount_type,
         discount_value: Number(form.discount_value),
         max_uses: form.max_uses ? Number(form.max_uses) : null,
+        low_remaining_uses_threshold: form.low_remaining_uses_threshold ? Number(form.low_remaining_uses_threshold) : null,
       });
       setCoupons((prev) => [created, ...prev]);
       setForm(emptyForm);
@@ -44,6 +45,25 @@ export function AdminCouponsView({ showToast }) {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function handleThresholdChange(couponId, value) {
+    try {
+      const updated = await updateAdminCoupon(token, couponId, {
+        low_remaining_uses_threshold: value === "" ? null : Number(value),
+      });
+      setCoupons((prev) => prev.map((c) => (c.id === couponId ? updated : c)));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function isLowRemainingUses(coupon) {
+    return (
+      coupon.max_uses != null &&
+      coupon.low_remaining_uses_threshold != null &&
+      coupon.max_uses - coupon.used_count <= coupon.low_remaining_uses_threshold
+    );
   }
 
   async function handleDelete(couponId) {
@@ -99,6 +119,10 @@ export function AdminCouponsView({ showToast }) {
               <FieldLabel>最大使用回数（空欄＝無制限）</FieldLabel>
               <input style={inputStyle} type="number" min="1" placeholder="100" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })} />
             </div>
+            <div>
+              <FieldLabel>残数アラートしきい値（空欄＝未設定）</FieldLabel>
+              <input style={inputStyle} type="number" min="0" placeholder="未設定" value={form.low_remaining_uses_threshold} onChange={(e) => setForm({ ...form, low_remaining_uses_threshold: e.target.value })} />
+            </div>
           </div>
           <button className="btn-primary" type="submit" style={{ padding: "10px 24px", fontSize: 14, borderRadius: 10 }}>作成する</button>
         </form>
@@ -108,7 +132,7 @@ export function AdminCouponsView({ showToast }) {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: `1px solid ${C.border}` }}>
-              {["コード", "割引内容", "使用回数", "ステータス", "作成日", "操作"].map((h, i) => (
+              {["コード", "割引内容", "使用回数", "残数アラートしきい値", "ステータス", "作成日", "操作"].map((h, i) => (
                 <th key={h} style={{ textAlign: i >= 2 ? "center" : "left", padding: "14px 20px", fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
@@ -122,8 +146,21 @@ export function AdminCouponsView({ showToast }) {
                 <td style={{ padding: "15px 20px", fontSize: 13, color: C.text }}>
                   {coupon.discount_type === "percentage" ? `${coupon.discount_value}% OFF` : `¥${fmt(coupon.discount_value)} OFF`}
                 </td>
-                <td style={{ padding: "15px 20px", textAlign: "center", fontSize: 13, color: C.sec }}>
+                <td style={{ padding: "15px 20px", textAlign: "center", fontSize: 13, color: isLowRemainingUses(coupon) ? C.red : C.sec }}>
                   {coupon.used_count}{coupon.max_uses ? ` / ${coupon.max_uses}` : ""}
+                  {isLowRemainingUses(coupon) && (
+                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: C.red, background: "rgba(255,107,107,0.12)", borderRadius: 6, padding: "2px 6px" }}>残数僅少</span>
+                  )}
+                </td>
+                <td style={{ padding: "15px 20px", textAlign: "center" }}>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="未設定"
+                    defaultValue={coupon.low_remaining_uses_threshold ?? ""}
+                    onBlur={(e) => handleThresholdChange(coupon.id, e.target.value)}
+                    style={{ ...inputStyle, width: 90, textAlign: "center" }}
+                  />
                 </td>
                 <td style={{ padding: "15px 20px", textAlign: "center" }}>
                   <span style={{
@@ -147,7 +184,7 @@ export function AdminCouponsView({ showToast }) {
               </tr>
             ))}
             {coupons.length === 0 && (
-              <tr><td colSpan={6} style={{ textAlign: "center", padding: "40px 20px", color: C.muted, fontSize: 14 }}>クーポンがありません</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: "center", padding: "40px 20px", color: C.muted, fontSize: 14 }}>クーポンがありません</td></tr>
             )}
           </tbody>
         </table>
