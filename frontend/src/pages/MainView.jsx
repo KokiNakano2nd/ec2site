@@ -24,6 +24,16 @@ export function MainView() {
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
   const [favItems, setFavItems] = useState([]);
+  const [resetToken, setResetToken] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("token");
+    if (!t) return;
+    window.history.replaceState({}, "", "/");
+    setResetToken(t);
+    setView("password-reset-confirm");
+  }, []);
 
   const favProductIds = new Set(favItems.map((f) => f.product.id));
 
@@ -79,9 +89,10 @@ export function MainView() {
     <div style={{ minHeight: "100vh", background: C.bg }}>
       <Header onNavigate={navigate} />
       <main style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px" }}>
-        {(view === "login" || view === "register") && (
+        {(view === "login" || view === "register" || view === "password-reset-request" || view === "password-reset-confirm") && (
           <AuthView
             initialMode={view}
+            resetToken={resetToken}
             onSuccess={() => navigate("products")}
             onToggle={(mode) => setView(mode)}
           />

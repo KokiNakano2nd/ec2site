@@ -36,6 +36,8 @@ classDiagram
         +bool is_active
         +datetime deleted_at
         +datetime created_at
+        +string password_reset_token
+        +datetime password_reset_token_expires_at
     }
     class addresses {
         +int id PK
@@ -160,8 +162,11 @@ classDiagram
 | is_active | BOOLEAN | | NOT NULL | true | 有効フラグ。退会(F-030)により`false`になる論理削除フラグ(2026-07-11追加) |
 | deleted_at | DATETIME | | NULL可 | なし | 退会日時(退会済みでない場合`NULL`)(2026-07-11追加) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
+| password_reset_token | STRING | index | NULL可 | なし | パスワードリセット用トークン。未発行・使用済みの場合`NULL`(2026-07-13追加、F-036) |
+| password_reset_token_expires_at | DATETIME | | NULL可 | なし | リセットトークンの有効期限(発行から24時間後)。`password_reset_token`が`NULL`の場合は無意味(2026-07-13追加、F-036) |
 
 - インデックス: `email` に一意インデックス(`unique=True, index=True`)を実装で明示的に付与している。退会後は匿名化されたメールアドレス(`deleted-user-{id}@deleted.invalid`)に書き換わるため、一意制約に抵触せず同一メールアドレスでの再登録が可能になる
+- インデックス: `password_reset_token` にインデックス(`index=True`)を付与し、トークン検証時の検索を高速化する(2026-07-13追加)
 
 ### addresses テーブル
 

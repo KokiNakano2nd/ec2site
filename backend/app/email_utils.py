@@ -106,6 +106,20 @@ def send_return_rejected_email(user_email: str, order_id: int) -> None:
     send_email(user_email, subject, body_html)
 
 
+def send_password_reset_email(user_email: str, reset_link: str) -> None:
+    subject = "【TechStore】パスワードリセットのご案内"
+    body_html = f"""
+<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
+  <h2 style="color:#1a1a2e">パスワードリセットのご案内</h2>
+  <p>パスワードリセットのご要望を受け付けました。以下のリンクから新しいパスワードを設定してください(有効期限: 24時間)。</p>
+  <p><a href="{reset_link}">{reset_link}</a></p>
+  <p>このリクエストに心当たりがない場合は、本メールを無視してください。</p>
+  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
+</body></html>
+"""
+    send_email(user_email, subject, body_html)
+
+
 def send_account_deletion_email(user_email: str) -> None:
     subject = "【TechStore】退会が完了しました"
     body_html = """

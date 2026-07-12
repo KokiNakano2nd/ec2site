@@ -1,5 +1,6 @@
 import os
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -8,6 +9,8 @@ from .. import auth, models, schemas
 from ..database import get_db
 
 router = APIRouter()
+
+PASSWORD_RESET_TOKEN_EXPIRY = timedelta(hours=24)
 
 
 @router.post("/auth/register", response_model=schemas.UserOut, status_code=201)
@@ -62,3 +65,45 @@ def delete_account(
     current_user.is_active = False
     current_user.deleted_at = datetime.utcnow()
     db.commit()
+
+
+@router.post("/auth/password-reset/request", status_code=200)
+def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Depends(get_db)):
+    from .. import main
+
+    user = (
+        db.query(models.User)
+        .filter(models.User.email == body.email, models.User.is_active.is_(True))
+        .first()
+    )
+    if user is not None:
+        user.password_reset_token = secrets.token_urlsafe(32)
+        user.password_reset_token_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_EXPIRY
+        db.commit()
+
+        reset_link = f"{main.FRONTEND_URL}/reset-password?token={user.password_reset_token}"
+        main.send_password_reset_email(user.email, reset_link)
+
+    return {}
+
+
+@router.post("/auth/password-reset/confirm", status_code=200)
+def confirm_password_reset(body: schemas.PasswordResetConfirm, db: Session = Depends(get_db)):
+    user = (
+        db.query(models.User)
+        .filter(models.User.password_reset_token == body.token)
+        .first()
+    )
+    if (
+        user is None
+        or user.password_reset_token_expires_at is None
+        or user.password_reset_token_expires_at < datetime.utcnow()
+    ):
+        raise HTTPException(status_code=400, detail="リンクが無効です。再度お手続きください")
+
+    user.hashed_password = auth.hash_password(body.new_password)
+    user.password_reset_token = None
+    user.password_reset_token_expires_at = None
+    db.commit()
+
+    return {}

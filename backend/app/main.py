@@ -9,6 +9,7 @@ from .database import Base, engine, get_db
 from .email_utils import (  # noqa: F401 -- re-exported for routers/tests (app.main.send_*)
     send_account_deletion_email,
     send_order_confirmation,
+    send_password_reset_email,
     send_return_rejected_email,
     send_status_notification,
 )

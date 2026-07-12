@@ -72,7 +72,7 @@ classDiagram
 - **`main.py`**: FastAPIアプリのコンポジションルート。`app = FastAPI()`の生成、CORSミドルウェア設定、起動時シード処理(`seed_products`/`seed_coupons`/`seed_admin`)、`routers/`配下の各ルーターの`include_router`登録のみを行う。加えて、`STRIPE_SECRET_KEY`・`stripe_lib`(`import stripe as stripe_lib`)・`send_account_deletion_email`等のメール関数を**モジュール属性として保持**し続けている。これはテスト(`backend/tests/conftest.py`等)が`monkeypatch.setattr("app.main.X", ...)`の形で`app.main`の属性を直接パッチしているためで、ルーター側がこれらの値をimport時にコピーせず`main.X`の形で呼び出し時参照することで、パッチが正しく効く設計になっている。
 - **`routers/`パッケージ**: ドメインごとに分割されたAPIエンドポイント定義。各モジュールは`APIRouter()`を1つ持ち、`main.py`から`include_router`される。
   - `products.py`: 商品一覧/詳細(公開)、レコメンド、レビュー、商品画像一覧(公開)
-  - `users.py`: 会員登録・ログイン・自分の情報取得・退会
+  - `users.py`: 会員登録・ログイン・自分の情報取得・退会・パスワードリセット要求/再設定(2026-07-13追加、F-036)
   - `cart.py`: カートCRUD
   - `orders.py`: 顧客側の注文作成・一覧・取得・キャンセル・返品申請
   - `admin_orders.py`: 管理者による返品承認/却下・注文ステータス変更・注文一覧
@@ -87,7 +87,7 @@ classDiagram
 - **`models.py`**: SQLAlchemyモデル定義(`Product`, `ProductImage`, `User`, `Address`, `Cart`, `Coupon`, `Order`, `OrderItem`, `Favorite`, `Review`)。`01_table_definition.md`の物理テーブル定義の実体。
 - **`schemas.py`**: Pydanticスキーマ定義。APIリクエスト/レスポンスの型を定義する(`ProductOut`, `OrderCreate`, `OrderOut` 等)。他の自作モジュールに依存しない。
 - **`auth.py`**: JWT認証(トークン発行・検証)、パスワードハッシュ化(`passlib`)、`get_current_user`等の依存性注入関数を提供する。`models`・`database`に依存する。
-- **`email_utils.py`**: 注文確認メール(`send_order_confirmation`)・状態通知メール(`send_status_notification`)・退会完了通知メール(`send_account_deletion_email`)・返品却下通知メール(`send_return_rejected_email`)の送信。`SMTP_HOST`未設定時はコンソール出力にフォールバックする(開発時モード)。他の自作モジュールに依存しない。
+- **`email_utils.py`**: 注文確認メール(`send_order_confirmation`)・状態通知メール(`send_status_notification`)・退会完了通知メール(`send_account_deletion_email`)・返品却下通知メール(`send_return_rejected_email`)・パスワードリセットメール(`send_password_reset_email`、2026-07-13追加)の送信。`SMTP_HOST`未設定時はコンソール出力にフォールバックする(開発時モード)。他の自作モジュールに依存しない。
 - **`database.py`**: SQLAlchemyエンジン・セッション(`get_db`)・`Base`(モデルの基底クラス)を初期化する。他の自作モジュールに依存しない。
 
 ## 3. `02_api_spec.md` のエンドポイントとモジュールの対応
@@ -101,6 +101,7 @@ classDiagram
 | `GET /products/{id}/images` | `routers/products.py` | `models`, `schemas` |
 | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | `routers/users.py` | `models`, `schemas`, `auth` |
 | `DELETE /users/me` | `routers/users.py` | `models`, `schemas`, `auth`, `main`(退会完了通知メール呼び出し) |
+| `POST /auth/password-reset/request`, `POST /auth/password-reset/confirm` | `routers/users.py` | `models`, `schemas`, `auth`, `main`(パスワードリセットメール呼び出し) |
 | `GET /cart`, `POST /cart`, `PATCH /cart/{id}`, `DELETE /cart/{id}` | `routers/cart.py` | `models`, `schemas`, `auth`(`get_current_user`) |
 | `POST /orders`, `GET /orders`, `GET /orders/{id}` | `routers/orders.py` | `models`, `schemas`, `auth`, `services/order_calc`, `main`(注文確認メール) |
 | `POST /orders/{id}/cancel`, `POST /orders/{id}/return-request` | `routers/orders.py` | `models`, `schemas`, `auth`, `main`(ステータス変更通知メール、`stripe_lib`経由の返金) |

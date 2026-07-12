@@ -43,6 +43,8 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     deleted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    password_reset_token = Column(String, nullable=True, index=True)
+    password_reset_token_expires_at = Column(DateTime, nullable=True)
 
     carts = relationship("Cart", back_populates="user")
     orders = relationship("Order", back_populates="user")

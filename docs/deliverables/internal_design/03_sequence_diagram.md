@@ -378,6 +378,49 @@ sequenceDiagram
 
 - しきい値(`low_remaining_uses_threshold`)自体の設定・変更は、クーポン発行時(`POST /admin/coupons`、F-023)、または既存の`PATCH /admin/coupons/{id}`(F-024)のリクエストボディに項目が加わる形で行い、別シーケンスは起こさない
 
+## UC-009: パスワードをリセットする(2026-07-13追加)
+
+`POST /auth/password-reset/request`・`POST /auth/password-reset/confirm`(`backend/app/routers/users.py`、F-036)に対応する。要求・確定の2段階に分かれ、メールアドレスの存在有無を開示しないための分岐があるため、シーケンス図を作成する。
+
+```mermaid
+sequenceDiagram
+    actor 顧客
+    participant Frontend as フロントエンド(AuthView)
+    participant API as routers/users.py(/auth/password-reset)
+    participant DB as DB(users)
+    participant Mail as email_utils(send_password_reset_email)
+
+    顧客->>Frontend: 「パスワードをお忘れですか?」→メールアドレス入力→確定
+    Frontend->>API: POST /auth/password-reset/request (email)
+    API->>DB: emailに一致し、is_active=trueのユーザーを検索する
+    alt 該当ユーザーが存在する
+        API->>DB: password_reset_token(ランダム値)・password_reset_token_expires_at(現在時刻+24時間)を保存する
+        DB-->>API: コミット完了
+        API->>Mail: send_password_reset_email(email, reset_link)
+        Mail-->>API: 送信完了(またはログ出力のみ)
+    else 該当ユーザーが存在しない
+        Note over API: 何もしない(トークン発行・メール送信をスキップ)
+    end
+    API-->>Frontend: 200(いずれの場合も同一レスポンス)
+    Frontend->>顧客: 「メールを送信しました」を表示する
+
+    顧客->>Frontend: メール内のリンクを開く→新しいパスワードを入力→確定
+    Frontend->>API: POST /auth/password-reset/confirm (token, new_password)
+    API->>DB: password_reset_tokenが一致し、password_reset_token_expires_atが現在時刻より後のユーザーを検索する
+    alt トークンが無効・期限切れ
+        API-->>Frontend: 400「リンクが無効です。再度お手続きください」
+    else トークンが有効
+        API->>DB: hashed_passwordを新しい値に更新し、password_reset_token・password_reset_token_expires_atをNULLにクリアする
+        DB-->>API: コミット完了
+        API-->>Frontend: 200
+        Frontend->>顧客: 「パスワードを更新しました」を表示し、ログイン画面に遷移する
+    end
+```
+
+- 要求(`request`)ステップは、該当ユーザーの有無に関わらず必ず200を返し、処理時間・レスポンス内容にも意図的な差異を設けない(ユーザー列挙攻撃対策、UC-009参照)
+- 確定(`confirm`)ステップの成功時、`password_reset_token`をNULLにクリアすることでトークンを1回限りの使用に制限する
+- パスワードリセット成功後も、それ以前に発行済みのJWTアクセストークンは個別には失効しない(本システムのJWTの制約。UC-009備考参照)
+
 ## 補足: UC-002とUC-003の内部処理の違い
 
 - UC-003(`POST /orders`)はクーポンコードが無効な場合に**400エラーで処理を中断する**が、UC-002(`POST /payment/checkout` / `POST /payment/complete`)はクーポンコードが無効な場合に**エラーにせず割引なしで処理を続行する**(`if coupon:` のみで判定し、`else`のエラー処理がない)。この差異は実装上の挙動であり、意図的な仕様か実装漏れかは要件定義フェーズ・業務エキスパートへの確認が必要な点として、`04_error_handling_design.md`に改善提案として記載する。

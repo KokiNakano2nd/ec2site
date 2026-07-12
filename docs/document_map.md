@@ -100,6 +100,7 @@ flowchart LR
 | 配送先管理業務 | US-010, US-011, US-012 | (なし) | F-015〜F-019 | S-007(S-002は選択のみ) | `01_table_definition.md`ADDRESSテーブル、`04_error_handling_design.md`「/addresses」各行 |
 | 商品管理業務(管理者) | US-013, US-014, US-015, US-024(2026-07-12追加) | (なし) | F-020〜F-022, F-034 | S-101(低在庫バッジ), S-104(低在庫アラート) | `02_module_design.md`「/admin/products」行、`03_sequence_diagram.md`「低在庫アラートを確認する(管理者)」 |
 | クーポン管理業務(管理者) | US-016, US-017, US-025(2026-07-13追加) | (なし) | F-023〜F-026, F-035 | S-102(残数僅少バッジ), S-104(クーポン残数アラート) | 同上「/admin/coupons」行、`03_sequence_diagram.md`「クーポン残数アラートを確認する(管理者)」 |
+| 会員管理業務(パスワードリセット、2026-07-13追加) | US-026 | UC-009 | F-036 | S-008, S-009(ログイン画面(S-005)からリンク) | `02_module_design.md`「/auth/password-reset」行、`03_sequence_diagram.md`「UC-009」 |
 | 注文管理業務(管理者) | US-018, US-023(2026-07-11追加) | (なし)、US-023のみUC-008化 | F-027, F-028, F-033 | S-103(返品承認・却下) | `03_sequence_diagram.md`「注文ステータスを更新する(管理者)」「UC-008」 |
 | 売上分析業務(管理者) | US-019 | (なし) | F-029 | S-104 | `02_module_design.md`「/admin/analytics」行 |
 
@@ -138,10 +139,10 @@ flowchart LR
 | フェーズ | 概要ファイル(入口) | 詳細ファイルの格納先 | 分離単位 |
 |---|---|---|---|
 | 要求定義 | [01_business_flow.md](deliverables/demand_definition/01_business_flow.md) | `deliverables/demand_definition/business_flow/` | 1業務=1ファイル(9業務) |
-| 要求定義 | [02_user_stories.md](deliverables/demand_definition/02_user_stories.md) | `deliverables/demand_definition/user_stories/` | 1User Story=1ファイル(25件、2026-07-13 US-025追加) |
-| 要件定義 | [01_use_cases.md](deliverables/requirements/01_use_cases.md) | `deliverables/requirements/use_cases/` | 1ユースケース=1ファイル(8件、2026-07-11 UC-005〜UC-008追加) |
-| 要件定義 | [03_function_list.md](deliverables/requirements/03_function_list.md) | `deliverables/requirements/function_list/` | 1機能=1ファイル(35件、2026-07-13 F-035追加) |
-| 外部設計 | [02_api_spec.md](deliverables/external_design/02_api_spec.md) | `deliverables/external_design/api_spec/` | 1エンドポイント=1ファイル(47件、2026-07-13 GET /admin/coupons/low-remaining-uses追加) |
+| 要求定義 | [02_user_stories.md](deliverables/demand_definition/02_user_stories.md) | `deliverables/demand_definition/user_stories/` | 1User Story=1ファイル(26件、2026-07-13 US-026追加) |
+| 要件定義 | [01_use_cases.md](deliverables/requirements/01_use_cases.md) | `deliverables/requirements/use_cases/` | 1ユースケース=1ファイル(9件、2026-07-13 UC-009追加) |
+| 要件定義 | [03_function_list.md](deliverables/requirements/03_function_list.md) | `deliverables/requirements/function_list/` | 1機能=1ファイル(36件、2026-07-13 F-036追加) |
+| 外部設計 | [02_api_spec.md](deliverables/external_design/02_api_spec.md) | `deliverables/external_design/api_spec/` | 1エンドポイント=1ファイル(49件、2026-07-13 パスワードリセット要求/確定の2件追加) |
 
 - 上記以外のドキュメント(概念ER図・画面一覧・画面設計・通知設計・内部設計各種等)は、項目数がまだ少なく肥大化していないため、分離を行っていない。今後項目数が増え見づらくなった場合は、同様の方針で分離を検討する。
 - 詳細ファイルはいずれも、概要ファイルへの「戻る」リンクと、元になったUser Story/機能等のIDを内部に保持しており、概要ファイル単体・詳細ファイル単体のどちらからでもトレーサビリティを追える。
@@ -217,3 +218,19 @@ flowchart LR
 
 - しきい値はクーポンごとに管理者が任意設定する値とし、未設定(NULL)のクーポン、および使用回数上限(`max_uses`)が無制限(NULL)のクーポンは残数僅少判定の対象外とした(低在庫アラートと同じ設計思想)。この設計判断は要求定義着手前にユーザーと協議して決定した。
 - 既存の`PATCH /admin/coupons/{id}`(元は`is_active`の反転専用)にしきい値設定機能を統合する際、`is_active`を明示指定した場合はその値を設定し、省略時のみ反転する挙動に変更した。既存フロントエンド(`toggleAdminCoupon`、ボディなしで呼び出す)・既存テストの双方と後方互換になるよう設計した。
+
+## 10. 新機能追加の例: パスワードリセット機能(F-036, 2026-07-13)
+
+`docs/README.md`§4「新機能開発フロー」の5件目の実例。これまでのUI表示系アラート機能(F-034, F-035)とは異なり、認証フローに関わる機能であり、分岐(トークンの有効/無効・期限切れ)とセキュリティ上の考慮(メールアドレス列挙攻撃対策)を伴うため、UC-009としてユースケース化した。
+
+| フェーズ | 追加・更新したドキュメント |
+|---|---|
+| 要求定義 | `business_flow/02_membership.md`(パスワードリセットフローを追加)、`user_stories/US-026.md`(新規) |
+| 要件定義 | `use_cases/UC-009.md`(新規)、`function_list/F-036.md`(新規)、`04_conceptual_er.md`(CUSTOMERの属性に関する補足)、`05_screen_list.md`(S-005の説明更新、S-008/S-009新設) |
+| 外部設計 | `api_spec/auth_password_reset_request__post.md`・`auth_password_reset_confirm__post.md`(新規)、`02_api_spec.md`(一覧に追加)、`01_screen_design.md`(S-005にリンクを追記、S-008/S-009を新設)、`04_notification_design.md`(N-005を新規追加) |
+| 内部設計 | `01_table_definition.md`(usersテーブルに`password_reset_token`/`password_reset_token_expires_at`を追加)、`02_module_design.md`(エンドポイント対応表・email_utilsの役割を更新)、`03_sequence_diagram.md`(UC-009のシーケンス図を新規追加) |
+| 実装 | `backend/app/models.py`, `schemas.py`, `routers/users.py`, `main.py`, `email_utils.py`、`frontend/src/api/auth.js`, `pages/AuthView.jsx`, `pages/MainView.jsx` |
+
+- リセットトークンは、JWTではなくDB保存のランダムな不透明トークン(`secrets.token_urlsafe`)とした。JWTはステートレスで個別失効の仕組みを持たず、1回限りの使い捨てトークンには不向きと判断したため(UC-009備考参照)。この設計判断は要求定義着手前にユーザーと協議して決定した
+- パスワードリセット要求(`POST /auth/password-reset/request`)は、入力されたメールアドレスの存在有無に関わらず常に同一の200レスポンスを返す設計とした。ユーザー列挙攻撃を防ぐための意図的なセキュリティ対策であり、この判断も要求定義着手前にユーザーと協議して決定した
+- フロントエンドはSPA内の`view`状態遷移(react-router不使用の既存方式)に合わせ、URLクエリパラメータ`?token=...`をアプリ起動時に読み取って`password-reset-confirm`ビューへ遷移させる方式とした(Stripe決済完了時の`?payment=success`処理と同じパターン)
