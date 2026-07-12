@@ -8,9 +8,20 @@ docs/study/.venv-pyspy/
 # SQLite dev DB
 backend/app/data/*.db
 
+# pytest coverage data
+backend/.coverage
+
 # Node
 node_modules/
 frontend/dist/
+frontend/coverage/
+
+# Playwright: locally-vendored shared libs for headless Chromium (this sandbox has
+# no root/sudo, so `playwright install --with-deps` can't run system package
+# installs) - see playwright.config.js comment for details.
+frontend/.playwright-libs/
+frontend/test-results/
+frontend/playwright-report/
 
 # Env files
 .env

@@ -108,6 +108,7 @@ class OrderOut(BaseModel):
     discount_amount: float = 0
     coupon_code: str | None = None
     status: str
+    return_reason: str | None = None
     created_at: datetime
     items: list[OrderItemOut]
     user_email: str | None = None
@@ -119,6 +120,14 @@ class OrderCreate(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: str
+
+
+class ReturnRequestCreate(BaseModel):
+    reason: str | None = None
+
+
+class AdminReturnAction(BaseModel):
+    action: str
 
 
 class CouponCreate(BaseModel):

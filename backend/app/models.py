@@ -102,6 +102,8 @@ class Order(Base):
     discount_amount = Column(Float, nullable=False, default=0)
     coupon_code = Column(String, nullable=True)
     status = Column(String, nullable=False, default="pending")
+    stripe_payment_intent_id = Column(String, nullable=True)
+    return_reason = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")

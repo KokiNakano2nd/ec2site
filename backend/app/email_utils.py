@@ -73,6 +73,9 @@ def send_status_notification(user_email: str, order_id: int, status: str) -> Non
         "processing": ("処理中", "ご注文の処理を開始しました。"),
         "shipped": ("発送済み", "商品を発送しました。もうしばらくお待ちください。"),
         "completed": ("完了", "ご注文が完了しました。またのご利用をお待ちしております。"),
+        "cancelled": ("キャンセル済み", "ご注文をキャンセルしました。決済済みの場合は返金処理を行いました。"),
+        "return_requested": ("返品申請中", "返品申請を受け付けました。審査結果をお待ちください。"),
+        "returned": ("返品完了", "返品が完了しました。決済済みの場合は返金処理を行いました。"),
     }
     if status not in status_labels:
         return
@@ -84,6 +87,19 @@ def send_status_notification(user_email: str, order_id: int, status: str) -> Non
   <p>注文番号 <strong>#{order_id}</strong> のステータスが更新されました。</p>
   <p style="font-size:15px;font-weight:bold;color:#5b8bf5">{label}</p>
   <p>{message}</p>
+  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
+</body></html>
+"""
+    send_email(user_email, subject, body_html)
+
+
+def send_return_rejected_email(user_email: str, order_id: int) -> None:
+    subject = f"【TechStore】返品申請の却下について #{order_id}"
+    body_html = f"""
+<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
+  <h2 style="color:#1a1a2e">返品申請の却下について</h2>
+  <p>注文番号 <strong>#{order_id}</strong> について頂いた返品申請を確認いたしましたが、今回は返品をお受けできませんでした。</p>
+  <p>商品は発送済みの状態のまま変更ありません。ご不明な点がございましたらカスタマーサポートまでお問い合わせください。</p>
   <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
 </body></html>
 """
