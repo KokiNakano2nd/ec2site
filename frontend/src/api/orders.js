@@ -32,3 +32,28 @@ export async function fetchOrderById(token, orderId) {
   }
   return res.json();
 }
+
+export async function cancelOrder(token, orderId) {
+  const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "注文のキャンセルに失敗しました");
+  }
+  return res.json();
+}
+
+export async function requestOrderReturn(token, orderId, reason) {
+  const res = await fetch(`${API_URL}/orders/${orderId}/return-request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ reason: reason || null }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "返品申請に失敗しました");
+  }
+  return res.json();
+}

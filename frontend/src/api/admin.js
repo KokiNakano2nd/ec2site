@@ -66,3 +66,19 @@ export async function updateOrderStatus(token, orderId, status) {
   }
   return res.json();
 }
+
+export async function resolveOrderReturn(token, orderId, action) {
+  const res = await fetch(`${API_URL}/admin/orders/${orderId}/return`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "返品処理に失敗しました");
+  }
+  return res.json();
+}

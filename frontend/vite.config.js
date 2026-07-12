@@ -7,4 +7,17 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.js"],
+    include: ["src/**/*.test.{js,jsx}"],
+    exclude: ["e2e/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.{js,jsx}"],
+      exclude: ["src/main.jsx", "src/test/**"],
+    },
+  },
 });
