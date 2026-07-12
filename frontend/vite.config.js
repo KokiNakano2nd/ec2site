@@ -17,7 +17,20 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/**/*.{js,jsx}"],
-      exclude: ["src/main.jsx", "src/test/**"],
+      exclude: [
+        "src/main.jsx",
+        "src/test/**",
+        "src/api/**",
+        "src/App.jsx",
+        "src/pages/MainView.jsx",
+        "src/AuthContext.jsx",
+      ],
+      thresholds: {
+        statements: 65,
+        branches: 55,
+        functions: 55,
+        lines: 70,
+      },
     },
   },
 });
