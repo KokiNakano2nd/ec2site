@@ -72,6 +72,8 @@ classDiagram
         +float discount_amount
         +string coupon_code
         +string status
+        +string stripe_payment_intent_id
+        +string return_reason
         +datetime created_at
     }
     class order_items {
@@ -215,7 +217,9 @@ classDiagram
 | total_price | FLOAT | | NOT NULL | なし | 合計金額(税込・割引後) |
 | discount_amount | FLOAT | | NOT NULL | 0 | 割引額 |
 | coupon_code | STRING | | NULL可 | なし | 適用されたクーポンコード(FK制約なし。上記訂正メモ参照) |
-| status | STRING | | NOT NULL | "pending" | 注文状態("pending" / "processing" 等) |
+| status | STRING | | NOT NULL | "pending" | 注文状態("pending" / "processing" / "shipped" / "cancelled" / "return_requested" / "returned" 等) |
+| stripe_payment_intent_id | STRING | | NULL可 | なし | Stripe決済完了時のPaymentIntent ID(`POST /payment/complete`で設定。キャンセル・返品承認時の返金先として使用。カード決済を使わず確定した注文は`NULL`のまま)(2026-07-11追加) |
+| return_reason | STRING | | NULL可 | なし | 返品申請時に顧客が入力した理由(任意入力)(2026-07-11追加) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 
 ### order_items テーブル

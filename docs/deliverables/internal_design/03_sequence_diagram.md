@@ -3,7 +3,7 @@
 テンプレート: [[../../templates/internal_design/sequence_diagram_template|docs/templates/internal_design/sequence_diagram_template.md]]
 全体ルール: [[../../README|docs/README.md]](UML記法統一ルール(必須)を含む)
 
-対象: `01_use_cases.md`のユースケースのうち、複数コンポーネント(フロントエンド・API・DB・外部サービス)が絡む処理。本ドキュメントでは UC-002(カード決済)を中心に、UC-003(カード決済なし)も含めて作成する。UC-001(商品を探す/購入検討)は単純な参照系(`GET /products`)のみのため、シーケンス図の作成は省略する([[sequence_diagram_template|テンプレート]]3節「内部処理が複雑なものに限定する」の方針による)。UC-004(レビュー投稿)も、顧客→API→DBの単純な単一コンポーネント処理であり、Stripe連携のような多段の分岐・外部サービス連携を含まないため、同様の理由でシーケンス図の作成を省略する。お気に入り・配送先管理・商品管理・クーポン管理・売上分析の各業務についても、いずれも単一APIコールで完結する処理であり、シーケンス図を要するほどの複雑さはないと判断した。注文管理業務(ステータス更新+通知メール送信)と会員管理業務のUC-005(退会。パスワード検証+DB複数テーブル更新+メール送信+ログアウトの多段処理)は例外的に複雑度が高いため、シーケンス図を作成する。
+対象: `01_use_cases.md`のユースケースのうち、複数コンポーネント(フロントエンド・API・DB・外部サービス)が絡む処理。本ドキュメントでは UC-002(カード決済)を中心に、UC-003(カード決済なし)も含めて作成する。UC-001(商品を探す/購入検討)は単純な参照系(`GET /products`)のみのため、シーケンス図の作成は省略する([[sequence_diagram_template|テンプレート]]3節「内部処理が複雑なものに限定する」の方針による)。UC-004(レビュー投稿)も、顧客→API→DBの単純な単一コンポーネント処理であり、Stripe連携のような多段の分岐・外部サービス連携を含まないため、同様の理由でシーケンス図の作成を省略する。お気に入り・配送先管理・商品管理・クーポン管理・売上分析の各業務についても、いずれも単一APIコールで完結する処理であり、シーケンス図を要するほどの複雑さはないと判断した。注文管理業務(ステータス更新+通知メール送信)と会員管理業務のUC-005(退会。パスワード検証+DB複数テーブル更新+メール送信+ログアウトの多段処理)は例外的に複雑度が高いため、シーケンス図を作成する。同様に、UC-006(注文キャンセル)・UC-007(返品申請)・UC-008(返品承認・却下)もStripe返金・在庫戻し等の多段処理を伴うため作成する(2026-07-11追加)。
 
 ## UC-003: カード決済を使わずに注文を確定する
 
@@ -94,12 +94,12 @@ sequenceDiagram
 
 ### 2-2. 決済完了処理(`POST /payment/complete`)
 
-フロントエンドは、Stripe決済ページからのリダイレクト後、URLパラメータ `?payment=success&session_id=...` を検知して本APIを呼び出す(`frontend/src/App.jsx`)。
+フロントエンドは、Stripe決済ページからのリダイレクト後、URLパラメータ `?payment=success&session_id=...` を検知して本APIを呼び出す(`frontend/src/pages/MainView.jsx`)。
 
 ```mermaid
 sequenceDiagram
     actor 顧客
-    participant Frontend as フロントエンド(App.jsx)
+    participant Frontend as フロントエンド(MainView.jsx)
     participant API as main.py(/payment/complete)
     participant Stripe
     participant DB as DB(carts, coupons, orders, order_items, products)
@@ -205,6 +205,136 @@ sequenceDiagram
 
 - メール送信(`send_account_deletion_email`)は、メールアドレスを匿名化する**前**に呼び出す(匿名化後では本人に届かないため)。この呼び出し順序は`main.py`の実装上の制約であり、他のUC(注文確認メール等)とは異なりDB更新より先に実行する
 - 注文履歴(`orders`/`order_items`)・レビュー(`reviews`)は本処理では更新・削除しない(UC-005備考、NFR-013参照)
+
+## UC-006: 注文をキャンセルする(2026-07-11追加)
+
+`POST /orders/{order_id}/cancel`(`backend/app/routers/orders.py`)に対応する。Stripe返金・在庫戻し・クーポン使用回数戻し・DB更新・メール送信という多段処理のため、他のUCと同様にシーケンス図を作成する。
+
+```mermaid
+sequenceDiagram
+    actor 顧客
+    participant Frontend as フロントエンド(OrderHistoryView)
+    participant API as routers/orders.py(/orders/{id}/cancel)
+    participant DB as DB(orders, order_items, products, coupons)
+    participant Stripe
+    participant Mail as email_utils(send_status_notification)
+
+    顧客->>Frontend: 「キャンセルする」ボタン押下
+    Frontend->>API: POST /orders/{id}/cancel
+    API->>DB: 対象の注文を取得する(当該顧客のものか確認)
+    alt 注文が存在しない/他人の注文
+        DB-->>API: なし
+        API-->>Frontend: 404「注文が見つかりません」
+    else 注文が存在する
+        DB-->>API: 注文
+        alt ステータスがpending/processing以外
+            API-->>Frontend: 400「発送済みの注文はキャンセルできません」
+        else pending/processing
+            opt stripe_payment_intent_idが設定されている
+                API->>Stripe: Refund.create(payment_intent)
+                alt Stripe API呼び出し失敗
+                    Stripe-->>API: Exception
+                    API-->>Frontend: 500「返金処理に失敗しました」
+                else 返金成功
+                    Stripe-->>API: Refund
+                end
+            end
+            API->>DB: 在庫を注文数量分加算、クーポンused_countを1減算、statusをcancelledに更新
+            DB-->>API: コミット完了
+            API->>Mail: send_status_notification(注文者, 注文ID, "cancelled")
+            Mail-->>API: 送信完了(またはログ出力のみ)
+            API-->>Frontend: 200 OrderOut
+            Frontend->>顧客: キャンセル完了を表示
+        end
+    end
+```
+
+## UC-007: 返品を申請する(2026-07-11追加)
+
+`POST /orders/{order_id}/return-request`(`backend/app/routers/orders.py`)に対応する。単純なステータス更新+通知メール送信のみだが、UC-006・UC-008との一連の流れを示すため図示する。
+
+```mermaid
+sequenceDiagram
+    actor 顧客
+    participant Frontend as フロントエンド(OrderHistoryView)
+    participant API as routers/orders.py(/orders/{id}/return-request)
+    participant DB as DB(orders)
+    participant Mail as email_utils(send_status_notification)
+
+    顧客->>Frontend: 返品理由を入力し「返品を申請する」を選択
+    Frontend->>API: POST /orders/{id}/return-request (reason)
+    API->>DB: 対象の注文を取得する(当該顧客のものか確認)
+    alt 注文が存在しない/他人の注文
+        DB-->>API: なし
+        API-->>Frontend: 404「注文が見つかりません」
+    else 注文が存在する
+        DB-->>API: 注文
+        alt ステータスがshipped以外
+            API-->>Frontend: 400「この注文は返品を申請できません」
+        else shipped
+            API->>DB: statusをreturn_requestedに更新、return_reasonを保存
+            DB-->>API: コミット完了
+            API->>Mail: send_status_notification(注文者, 注文ID, "return_requested")
+            Mail-->>API: 送信完了(またはログ出力のみ)
+            API-->>Frontend: 200 OrderOut
+            Frontend->>顧客: 申請完了を表示
+        end
+    end
+```
+
+## UC-008: 返品を承認・却下する(管理者)(2026-07-11追加、2026-07-12 N-004反映)
+
+`PATCH /admin/orders/{order_id}/return`(`backend/app/routers/admin_orders.py`)に対応する。承認/却下で処理が分岐し、承認時はUC-006と同様のStripe返金・在庫戻しを伴う多段処理のため図示する。却下時と承認時で送信するメール関数が異なる(N-004、`04_notification_design.md`参照)。
+
+```mermaid
+sequenceDiagram
+    actor 管理者
+    participant Frontend as フロントエンド(AdminOrdersView)
+    participant API as routers/admin_orders.py(/admin/orders/{id}/return)
+    participant DB as DB(orders, order_items, products, coupons)
+    participant Stripe
+    participant Mail as email_utils
+    actor 顧客
+
+    管理者->>Frontend: 「承認」または「却下」を選択
+    Frontend->>API: PATCH /admin/orders/{id}/return (action)
+    API->>DB: 対象の注文を取得する
+    alt 注文が存在しない
+        DB-->>API: なし
+        API-->>Frontend: 404「注文が見つかりません」
+    else 注文が存在する
+        DB-->>API: 注文
+        alt ステータスがreturn_requested以外
+            API-->>Frontend: 400「この注文は返品申請中ではありません」
+        else return_requested
+            alt action == "reject"
+                API->>DB: statusをshippedに更新
+                DB-->>API: コミット完了
+                API->>Mail: send_return_rejected_email(注文者, 注文ID)
+                Mail->>顧客: 返品却下通知メールを送信する
+            else action == "approve"
+                opt stripe_payment_intent_idが設定されている
+                    API->>Stripe: Refund.create(payment_intent)
+                    alt Stripe API呼び出し失敗
+                        Stripe-->>API: Exception
+                        API-->>Frontend: 500「返金処理に失敗しました」
+                    else 返金成功
+                        Stripe-->>API: Refund
+                    end
+                end
+                API->>DB: 在庫を注文数量分加算、クーポンused_countを1減算、statusをreturnedに更新
+                DB-->>API: コミット完了
+                API->>Mail: send_status_notification(注文者, 注文ID, "returned")
+                Mail->>顧客: ステータス変更通知メールを送信する
+            end
+            API-->>Frontend: 200 OrderOut
+            Frontend->>管理者: 更新完了を表示する
+        end
+    end
+```
+
+- 却下時は在庫・クーポン使用回数・返金処理を行わない(UC-008備考参照)
+- 却下時に送信するメールは`send_status_notification`ではなく`send_return_rejected_email`(N-004): ステータスが`return_requested`→`shipped`に戻るため、汎用のステータス変更通知では顧客に「発送済み」という誤解を招く文面になってしまうことへの対応(`04_notification_design.md`参照)
 
 ## 補足: UC-002とUC-003の内部処理の違い
 

@@ -15,6 +15,8 @@
 | 商品購入業務 | /coupons | GET | `/coupons/validate` | クーポンコードを検証する | [coupons_validate__get.md](api_spec/coupons_validate__get.md) |
 | 商品購入業務 | /orders | POST | `/orders` | カード決済を使わずに注文を確定する | [orders__post.md](api_spec/orders__post.md) |
 | 商品購入業務 | /orders | GET | `/orders` | 注文履歴を取得する | [orders__get.md](api_spec/orders__get.md) |
+| 商品購入業務 | /orders | POST | `/orders/{order_id}/cancel` | 注文をキャンセルする | [orders_order_id_cancel__post.md](api_spec/orders_order_id_cancel__post.md) |
+| 商品購入業務 | /orders | POST | `/orders/{order_id}/return-request` | 返品を申請する | [orders_order_id_return_request__post.md](api_spec/orders_order_id_return_request__post.md) |
 | 商品購入業務 | /payment | GET | `/config` | システム設定を取得する | [config__get.md](api_spec/config__get.md) |
 | 商品購入業務 | /payment | POST | `/payment/checkout` | Stripe決済セッションを作成する | [payment_checkout__post.md](api_spec/payment_checkout__post.md) |
 | 商品購入業務 | /payment | POST | `/payment/complete` | Stripe決済完了処理を行う | [payment_complete__post.md](api_spec/payment_complete__post.md) |
@@ -44,6 +46,7 @@
 | クーポン管理業務(管理者向け) | /admin/coupons | DELETE | `/admin/coupons/{coupon_id}` | クーポンを削除する | [admin_coupons_coupon_id__delete.md](api_spec/admin_coupons_coupon_id__delete.md) |
 | 注文管理業務(管理者向け) | /admin/orders | GET | `/admin/orders` | 全顧客の注文一覧を取得する | [admin_orders__get.md](api_spec/admin_orders__get.md) |
 | 注文管理業務(管理者向け) | /admin/orders | PATCH | `/admin/orders/{order_id}/status` | 注文ステータスを更新する | [admin_orders_order_id_status__patch.md](api_spec/admin_orders_order_id_status__patch.md) |
+| 注文管理業務(管理者向け) | /admin/orders | PATCH | `/admin/orders/{order_id}/return` | 返品を承認・却下する | [admin_orders_order_id_return__patch.md](api_spec/admin_orders_order_id_return__patch.md) |
 | 売上分析業務(管理者向け) | /admin/analytics | GET | `/admin/analytics/summary` | 売上サマリーを取得する | [admin_analytics_summary__get.md](api_spec/admin_analytics_summary__get.md) |
 | 売上分析業務(管理者向け) | /admin/analytics | GET | `/admin/analytics/sales-by-date` | 日別売上推移を取得する | [admin_analytics_sales_by_date__get.md](api_spec/admin_analytics_sales_by_date__get.md) |
 | 売上分析業務(管理者向け) | /admin/analytics | GET | `/admin/analytics/top-products` | 売れ筋商品を取得する | [admin_analytics_top_products__get.md](api_spec/admin_analytics_top_products__get.md) |

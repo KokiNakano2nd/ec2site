@@ -17,6 +17,9 @@
 | 会員管理業務 | F-009 | 会員登録 | US-006 | [F-009.md](function_list/F-009.md) |
 | 会員管理業務 | F-010 | ログイン | US-007 | [F-010.md](function_list/F-010.md) |
 | 会員管理業務 | F-030 | 退会(アカウント論理削除) | US-020, UC-005 | [F-030.md](function_list/F-030.md) |
+| 商品購入業務 | F-031 | 注文キャンセル | US-021, UC-006 | [F-031.md](function_list/F-031.md) |
+| 商品購入業務 | F-032 | 返品申請 | US-022, UC-007 | [F-032.md](function_list/F-032.md) |
+| 注文管理業務(管理者向け) | F-033 | 返品承認・却下(管理者) | US-023, UC-008 | [F-033.md](function_list/F-033.md) |
 | お気に入り管理業務 | F-011 | お気に入り登録・解除 | US-008 | [F-011.md](function_list/F-011.md) |
 | お気に入り管理業務 | F-012 | お気に入り一覧参照 | US-008 | [F-012.md](function_list/F-012.md) |
 | レビュー投稿業務 | F-013 | レビュー投稿 | UC-004 | [F-013.md](function_list/F-013.md) |
