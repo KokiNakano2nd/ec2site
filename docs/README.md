@@ -53,3 +53,14 @@
 
 - ステップ4〜7で「ドキュメントを全部書いてから実装する」のではなく、実装時に判明した詳細(呼び出し順序の制約等)を該当フェーズのドキュメントに書き戻す往復を許容する
 - 本フローの具体例は`docs/document_map.md`「6. 新機能追加の例: 退会機能」を参照
+
+## 5. コーディング規約(2026-07-13追加)
+
+実装時の命名・設計・書き方の慣習は `docs/coding_conventions/` にまとめる。要求定義〜内部設計の成果物(`deliverables/`)とは性質が異なるプロジェクト運営ルールのため、`document_map.md` の派生関係表には含めない。
+
+- `docs/coding_conventions/common.md` : 言語非依存(命名・Git運用・コメント・セキュリティ・ログ等)
+- `docs/coding_conventions/backend.md` : Python / FastAPI / SQLAlchemy / Pydantic
+- `docs/coding_conventions/frontend.md` : JavaScript / React / Vite
+- `docs/coding_conventions/testing.md` : pytest / Vitest
+
+ESLint/ruff/Prettierが機械的に強制できるルール(インデント・import順・クォート等)は規約書に重複記載せず、ツールでは強制しにくい設計方針・命名方針にフォーカスする。
