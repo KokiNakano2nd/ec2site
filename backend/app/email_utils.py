@@ -41,16 +41,23 @@ def send_email(to: str, subject: str, body_html: str) -> None:
         logger.error("メール送信失敗(to=%s, subject=%s): %s", to, subject, e)
 
 
+def _render_email(title: str, body_inner: str) -> str:
+    return f"""
+<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
+  <h2 style="color:#1a1a2e">{title}</h2>
+{body_inner}
+  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
+</body></html>
+"""
+
+
 def send_order_confirmation(user_email: str, order_id: int, total_price: float, items: list[dict]) -> None:
     subject = f"【TechStore】ご注文確認 #{order_id}"
     items_html = "".join(
         f"<li>{item['name']} × {item['quantity']}個 — ¥{int(item['price'] * item['quantity']):,}</li>"
         for item in items
     )
-    body_html = f"""
-<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a2e">ご注文ありがとうございます</h2>
-  <p>以下の内容でご注文を承りました。</p>
+    body_inner = f"""  <p>以下の内容でご注文を承りました。</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0">
     <tr style="background:#f5f5f5">
       <th style="text-align:left;padding:8px 12px;font-size:13px">注文番号</th>
@@ -61,11 +68,8 @@ def send_order_confirmation(user_email: str, order_id: int, total_price: float, 
   <ul style="padding-left:20px;font-size:14px;line-height:1.8">{items_html}</ul>
   <p style="font-size:16px;font-weight:bold;margin-top:16px;border-top:1px solid #eee;padding-top:16px">
     合計（税込）: ¥{int(total_price):,}
-  </p>
-  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
-</body></html>
-"""
-    send_email(user_email, subject, body_html)
+  </p>"""
+    send_email(user_email, subject, _render_email("ご注文ありがとうございます", body_inner))
 
 
 def send_status_notification(user_email: str, order_id: int, status: str) -> None:
@@ -81,66 +85,36 @@ def send_status_notification(user_email: str, order_id: int, status: str) -> Non
         return
     label, message = status_labels[status]
     subject = f"【TechStore】注文ステータス更新 #{order_id}（{label}）"
-    body_html = f"""
-<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a2e">注文ステータスのお知らせ</h2>
-  <p>注文番号 <strong>#{order_id}</strong> のステータスが更新されました。</p>
+    body_inner = f"""  <p>注文番号 <strong>#{order_id}</strong> のステータスが更新されました。</p>
   <p style="font-size:15px;font-weight:bold;color:#5b8bf5">{label}</p>
-  <p>{message}</p>
-  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
-</body></html>
-"""
-    send_email(user_email, subject, body_html)
+  <p>{message}</p>"""
+    send_email(user_email, subject, _render_email("注文ステータスのお知らせ", body_inner))
 
 
 def send_return_rejected_email(user_email: str, order_id: int) -> None:
     subject = f"【TechStore】返品申請の却下について #{order_id}"
-    body_html = f"""
-<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a2e">返品申請の却下について</h2>
-  <p>注文番号 <strong>#{order_id}</strong> について頂いた返品申請を確認いたしましたが、今回は返品をお受けできませんでした。</p>
-  <p>商品は発送済みの状態のまま変更ありません。ご不明な点がございましたらカスタマーサポートまでお問い合わせください。</p>
-  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
-</body></html>
-"""
-    send_email(user_email, subject, body_html)
+    body_inner = f"""  <p>注文番号 <strong>#{order_id}</strong> について頂いた返品申請を確認いたしましたが、今回は返品をお受けできませんでした。</p>
+  <p>商品は発送済みの状態のまま変更ありません。ご不明な点がございましたらカスタマーサポートまでお問い合わせください。</p>"""
+    send_email(user_email, subject, _render_email("返品申請の却下について", body_inner))
 
 
 def send_password_reset_email(user_email: str, reset_link: str) -> None:
     subject = "【TechStore】パスワードリセットのご案内"
-    body_html = f"""
-<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a2e">パスワードリセットのご案内</h2>
-  <p>パスワードリセットのご要望を受け付けました。以下のリンクから新しいパスワードを設定してください(有効期限: 24時間)。</p>
+    body_inner = f"""  <p>パスワードリセットのご要望を受け付けました。以下のリンクから新しいパスワードを設定してください(有効期限: 24時間)。</p>
   <p><a href="{reset_link}">{reset_link}</a></p>
-  <p>このリクエストに心当たりがない場合は、本メールを無視してください。</p>
-  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
-</body></html>
-"""
-    send_email(user_email, subject, body_html)
+  <p>このリクエストに心当たりがない場合は、本メールを無視してください。</p>"""
+    send_email(user_email, subject, _render_email("パスワードリセットのご案内", body_inner))
 
 
 def send_verification_email(user_email: str, verify_link: str) -> None:
     subject = "【TechStore】メールアドレスをご確認ください"
-    body_html = f"""
-<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a2e">メールアドレスをご確認ください</h2>
-  <p>ご登録ありがとうございます。以下のリンクからメールアドレスの確認を完了してください(有効期限: 7日間)。</p>
+    body_inner = f"""  <p>ご登録ありがとうございます。以下のリンクからメールアドレスの確認を完了してください(有効期限: 7日間)。</p>
   <p><a href="{verify_link}">{verify_link}</a></p>
-  <p>このリクエストに心当たりがない場合は、本メールを無視してください。</p>
-  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
-</body></html>
-"""
-    send_email(user_email, subject, body_html)
+  <p>このリクエストに心当たりがない場合は、本メールを無視してください。</p>"""
+    send_email(user_email, subject, _render_email("メールアドレスをご確認ください", body_inner))
 
 
 def send_account_deletion_email(user_email: str) -> None:
     subject = "【TechStore】退会が完了しました"
-    body_html = """
-<html><body style="font-family:sans-serif;color:#333;max-width:560px;margin:0 auto;padding:24px">
-  <h2 style="color:#1a1a2e">退会手続きが完了しました</h2>
-  <p>退会手続きが完了しました。ご利用ありがとうございました。</p>
-  <p style="font-size:13px;color:#888;margin-top:24px">TechStore カスタマーサポート</p>
-</body></html>
-"""
-    send_email(user_email, subject, body_html)
+    body_inner = """  <p>退会手続きが完了しました。ご利用ありがとうございました。</p>"""
+    send_email(user_email, subject, _render_email("退会手続きが完了しました", body_inner))

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchProducts } from "../api/products";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { SkeletonCard } from "../components/SkeletonCard";
 import { C, PAGE_SIZE } from "../lib/constants";
 import { fmt } from "../lib/format";
@@ -21,9 +22,7 @@ export function ProductList({ onSelect, favProductIds = new Set(), onToggleFav }
   }, [searchQuery]);
 
   if (error) return (
-    <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14 }}>
-      エラー: {error}
-    </div>
+    <ErrorBanner style={{ marginBottom: 0 }}>エラー: {error}</ErrorBanner>
   );
 
   if (loading) return (

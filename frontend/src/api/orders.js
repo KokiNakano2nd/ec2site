@@ -1,59 +1,35 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+import { apiFetch } from "./client";
 
 export async function createOrder(token, couponCode = null) {
-  const res = await fetch(`${API_URL}/orders`, {
+  return apiFetch("/orders", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ coupon_code: couponCode || null }),
+    token,
+    body: { coupon_code: couponCode || null },
+    errorMessage: "注文の確定に失敗しました",
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "注文の確定に失敗しました");
-  }
-  return res.json();
 }
 
 export async function fetchOrders(token) {
-  const res = await fetch(`${API_URL}/orders`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("注文履歴の取得に失敗しました");
-  }
-  return res.json();
+  return apiFetch("/orders", { token, errorMessage: "注文履歴の取得に失敗しました" });
 }
 
 export async function fetchOrderById(token, orderId) {
-  const res = await fetch(`${API_URL}/orders/${orderId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("注文情報の取得に失敗しました");
-  }
-  return res.json();
+  return apiFetch(`/orders/${orderId}`, { token, errorMessage: "注文情報の取得に失敗しました" });
 }
 
 export async function cancelOrder(token, orderId) {
-  const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+  return apiFetch(`/orders/${orderId}/cancel`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    token,
+    errorMessage: "注文のキャンセルに失敗しました",
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "注文のキャンセルに失敗しました");
-  }
-  return res.json();
 }
 
 export async function requestOrderReturn(token, orderId, reason) {
-  const res = await fetch(`${API_URL}/orders/${orderId}/return-request`, {
+  return apiFetch(`/orders/${orderId}/return-request`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ reason: reason || null }),
+    token,
+    body: { reason: reason || null },
+    errorMessage: "返品申請に失敗しました",
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "返品申請に失敗しました");
-  }
-  return res.json();
 }

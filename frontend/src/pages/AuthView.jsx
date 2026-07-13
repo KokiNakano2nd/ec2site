@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { confirmPasswordReset, register, requestPasswordReset } from "../api/auth";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
 
@@ -88,9 +89,9 @@ export function AuthView({ initialMode, resetToken, onSuccess, onToggle }) {
           ) : (
             <form onSubmit={handleRequestReset} style={{ display: "flex", flexDirection: "column", gap: 12, width: 360 }}>
               {error && (
-                <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "12px 16px", color: C.red, fontSize: 13 }}>
+                <ErrorBanner size="sm">
                   {error}
-                </div>
+                </ErrorBanner>
               )}
               <div>
                 <FieldLabel>メールアドレス</FieldLabel>
@@ -128,9 +129,9 @@ export function AuthView({ initialMode, resetToken, onSuccess, onToggle }) {
           ) : (
             <form onSubmit={handleConfirmReset} style={{ display: "flex", flexDirection: "column", gap: 12, width: 360 }}>
               {error && (
-                <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "12px 16px", color: C.red, fontSize: 13 }}>
+                <ErrorBanner size="sm">
                   {error}
-                </div>
+                </ErrorBanner>
               )}
               <div>
                 <FieldLabel>新しいパスワード</FieldLabel>
@@ -155,9 +156,9 @@ export function AuthView({ initialMode, resetToken, onSuccess, onToggle }) {
         </p>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, width: 360 }}>
           {error && (
-            <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "12px 16px", color: C.red, fontSize: 13 }}>
+            <ErrorBanner size="sm">
               {error}
-            </div>
+            </ErrorBanner>
           )}
           <div>
             <FieldLabel>メールアドレス</FieldLabel>

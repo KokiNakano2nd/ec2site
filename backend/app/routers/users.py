@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from .. import auth, models, rate_limit, schemas
+from .. import auth, config, email_utils, models, rate_limit, schemas
 from ..database import get_db
 
 router = APIRouter()
@@ -20,8 +20,6 @@ RATE_LIMIT_MESSAGE = "リクエストが多すぎます。しばらくしてか�
 
 @router.post("/auth/register", response_model=schemas.UserOut, status_code=201)
 def register(user_in: schemas.UserCreate, request: Request, db: Session = Depends(get_db)):
-    from .. import main
-
     max_requests, window_seconds = REGISTER_RATE_LIMIT
     if not rate_limit.check_rate_limit(f"register:{request.client.host}", max_requests, window_seconds):
         raise HTTPException(status_code=429, detail=RATE_LIMIT_MESSAGE)
@@ -40,8 +38,8 @@ def register(user_in: schemas.UserCreate, request: Request, db: Session = Depend
     db.commit()
     db.refresh(user)
 
-    verify_link = f"{main.FRONTEND_URL}/?verify_token={user.email_verification_token}"
-    main.send_verification_email(user.email, verify_link)
+    verify_link = f"{config.FRONTEND_URL}/?verify_token={user.email_verification_token}"
+    email_utils.send_verification_email(user.email, verify_link)
 
     return user
 
@@ -71,12 +69,10 @@ def delete_account(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    from .. import main
-
     if not auth.verify_password(body.password, current_user.hashed_password):
         raise HTTPException(status_code=403, detail="パスワードが正しくありません")
 
-    main.send_account_deletion_email(current_user.email)
+    email_utils.send_account_deletion_email(current_user.email)
 
     db.query(models.Address).filter(models.Address.user_id == current_user.id).delete()
     db.query(models.Favorite).filter(models.Favorite.user_id == current_user.id).delete()
@@ -90,8 +86,6 @@ def delete_account(
 
 @router.post("/auth/password-reset/request", status_code=200)
 def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Depends(get_db)):
-    from .. import main
-
     user = (
         db.query(models.User)
         .filter(models.User.email == body.email, models.User.is_active.is_(True))
@@ -102,8 +96,8 @@ def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Dep
         user.password_reset_token_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_EXPIRY
         db.commit()
 
-        reset_link = f"{main.FRONTEND_URL}/reset-password?token={user.password_reset_token}"
-        main.send_password_reset_email(user.email, reset_link)
+        reset_link = f"{config.FRONTEND_URL}/reset-password?token={user.password_reset_token}"
+        email_utils.send_password_reset_email(user.email, reset_link)
 
     return {}
 
@@ -135,14 +129,12 @@ def resend_verification_email(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    from .. import main
-
     current_user.email_verification_token = secrets.token_urlsafe(32)
     current_user.email_verification_token_expires_at = datetime.utcnow() + EMAIL_VERIFICATION_TOKEN_EXPIRY
     db.commit()
 
-    verify_link = f"{main.FRONTEND_URL}/?verify_token={current_user.email_verification_token}"
-    main.send_verification_email(current_user.email, verify_link)
+    verify_link = f"{config.FRONTEND_URL}/?verify_token={current_user.email_verification_token}"
+    email_utils.send_verification_email(current_user.email, verify_link)
 
     return {}
 

@@ -22,7 +22,7 @@ def test_request_reset_for_existing_user_sends_email_and_sets_token(client, auth
         sent["email"] = email
         sent["link"] = link
 
-    monkeypatch.setattr("app.main.send_password_reset_email", fake_send)
+    monkeypatch.setattr("app.email_utils.send_password_reset_email", fake_send)
 
     res = client.post("/auth/password-reset/request", json={"email": "user@example.com"})
     assert res.status_code == 200
@@ -41,7 +41,7 @@ def test_request_reset_for_nonexistent_email_returns_same_200_without_sending(cl
     def fake_send(email, link):
         sent["called"] = True
 
-    monkeypatch.setattr("app.main.send_password_reset_email", fake_send)
+    monkeypatch.setattr("app.email_utils.send_password_reset_email", fake_send)
 
     res = client.post("/auth/password-reset/request", json={"email": "nobody@example.com"})
     assert res.status_code == 200
@@ -49,7 +49,7 @@ def test_request_reset_for_nonexistent_email_returns_same_200_without_sending(cl
 
 
 def test_confirm_reset_with_valid_token_updates_password(client, auth_headers, monkeypatch):
-    monkeypatch.setattr("app.main.send_password_reset_email", lambda email, link: None)
+    monkeypatch.setattr("app.email_utils.send_password_reset_email", lambda email, link: None)
     client.post("/auth/password-reset/request", json={"email": "user@example.com"})
     token = _get_reset_token("user@example.com")
 
@@ -67,7 +67,7 @@ def test_confirm_reset_with_valid_token_updates_password(client, auth_headers, m
 
 
 def test_confirm_reset_token_is_single_use(client, auth_headers, monkeypatch):
-    monkeypatch.setattr("app.main.send_password_reset_email", lambda email, link: None)
+    monkeypatch.setattr("app.email_utils.send_password_reset_email", lambda email, link: None)
     client.post("/auth/password-reset/request", json={"email": "user@example.com"})
     token = _get_reset_token("user@example.com")
 
@@ -93,7 +93,7 @@ def test_confirm_reset_with_expired_token_returns_400(client, auth_headers, monk
     from app.database import SessionLocal
     from app import models
 
-    monkeypatch.setattr("app.main.send_password_reset_email", lambda email, link: None)
+    monkeypatch.setattr("app.email_utils.send_password_reset_email", lambda email, link: None)
     client.post("/auth/password-reset/request", json={"email": "user@example.com"})
     token = _get_reset_token("user@example.com")
 

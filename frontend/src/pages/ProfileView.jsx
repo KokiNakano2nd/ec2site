@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { createAddress, deleteAddress, fetchAddresses, setDefaultAddress } from "../api/addresses";
 import { deleteAccount, resendVerificationEmail } from "../api/auth";
 import { useAuth } from "../AuthContext";
+import { DeleteAccountModal } from "../components/DeleteAccountModal";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
 
@@ -130,9 +132,7 @@ export function ProfileView({ showToast, onAccountDeleted }) {
       </div>
 
       {error && (
-        <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "12px 16px", fontSize: 13, marginBottom: 16 }}>
-          {error}
-        </div>
+        <ErrorBanner size="sm" style={{ marginBottom: 16 }}>{error}</ErrorBanner>
       )}
 
       {showForm && (
@@ -219,34 +219,14 @@ export function ProfileView({ showToast, onAccountDeleted }) {
       </div>
 
       {showDeleteModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <form onSubmit={handleDeleteAccount} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, width: 360, animation: "fadeUp 0.2s ease" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>本当に退会しますか？</h3>
-            <p style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>確認のため、現在のパスワードを入力してください。</p>
-            <FieldLabel>パスワード</FieldLabel>
-            <input
-              type="password"
-              style={fieldStyle}
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              required
-              autoFocus
-            />
-            {deleteError && (
-              <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 13, marginTop: 12 }}>
-                {deleteError}
-              </div>
-            )}
-            <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
-              <button type="button" className="btn-surface" onClick={() => setShowDeleteModal(false)} style={{ padding: "8px 16px", fontSize: 13 }}>
-                キャンセル
-              </button>
-              <button type="submit" className="btn-danger" disabled={deleting} style={{ padding: "8px 16px", fontSize: 13 }}>
-                {deleting ? "処理中..." : "退会を実行する"}
-              </button>
-            </div>
-          </form>
-        </div>
+        <DeleteAccountModal
+          password={deletePassword}
+          onPasswordChange={(e) => setDeletePassword(e.target.value)}
+          error={deleteError}
+          deleting={deleting}
+          onCancel={() => setShowDeleteModal(false)}
+          onSubmit={handleDeleteAccount}
+        />
       )}
     </div>
   );

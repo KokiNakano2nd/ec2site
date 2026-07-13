@@ -69,7 +69,7 @@ def mock_stripe_refund_success(monkeypatch):
         calls.append(kwargs)
         return {"id": "re_test_123", "status": "succeeded"}
 
-    monkeypatch.setattr("app.main.stripe_lib.Refund.create", fake_create)
+    monkeypatch.setattr("app.stripe_client.stripe_lib.Refund.create", fake_create)
     return calls
 
 
@@ -78,12 +78,12 @@ def mock_stripe_refund_failure(monkeypatch):
     def fake_create(**kwargs):
         raise Exception("stripe refund failed (mocked)")
 
-    monkeypatch.setattr("app.main.stripe_lib.Refund.create", fake_create)
+    monkeypatch.setattr("app.stripe_client.stripe_lib.Refund.create", fake_create)
 
 
 @pytest.fixture
 def stripe_enabled(monkeypatch):
-    monkeypatch.setattr("app.main.STRIPE_SECRET_KEY", "sk_test_dummy")
+    monkeypatch.setattr("app.config.STRIPE_SECRET_KEY", "sk_test_dummy")
 
 
 def create_order_for_user(client, headers, product_id, quantity=1):

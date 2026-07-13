@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { addToCart } from "../api/cart";
 import { fetchProductById } from "../api/products";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { RecommendationsSection } from "../components/RecommendationsSection";
 import { ReviewsSection } from "../components/ReviewsSection";
 import { C } from "../lib/constants";
@@ -33,9 +34,7 @@ export function ProductDetail({ productId, onBack, onNavigateLogin, showToast, f
   }
 
   if (error) return (
-    <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14 }}>
-      エラー: {error}
-    </div>
+    <ErrorBanner style={{ marginBottom: 0 }}>エラー: {error}</ErrorBanner>
   );
   if (!product) return <p style={{ color: C.muted, fontSize: 14 }}>読み込み中...</p>;
 

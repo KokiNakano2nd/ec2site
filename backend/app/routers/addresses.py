@@ -7,6 +7,10 @@ from ..database import get_db
 router = APIRouter()
 
 
+def _clear_default_address(db: Session, user_id: int) -> None:
+    db.query(models.Address).filter(models.Address.user_id == user_id).update({"is_default": False})
+
+
 @router.get("/addresses", response_model=list[schemas.AddressOut])
 def list_addresses(
     current_user: models.User = Depends(auth.get_current_user),
@@ -27,7 +31,7 @@ def create_address(
     db: Session = Depends(get_db),
 ):
     if address_in.is_default:
-        db.query(models.Address).filter(models.Address.user_id == current_user.id).update({"is_default": False})
+        _clear_default_address(db, current_user.id)
     address = models.Address(user_id=current_user.id, **address_in.model_dump())
     db.add(address)
     db.commit()
@@ -50,7 +54,7 @@ def update_address(
     if address is None:
         raise HTTPException(status_code=404, detail="住所が見つかりません")
     if address_in.is_default:
-        db.query(models.Address).filter(models.Address.user_id == current_user.id).update({"is_default": False})
+        _clear_default_address(db, current_user.id)
     for field, value in address_in.model_dump(exclude_unset=True).items():
         setattr(address, field, value)
     db.commit()
@@ -82,7 +86,7 @@ def set_default_address(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    db.query(models.Address).filter(models.Address.user_id == current_user.id).update({"is_default": False})
+    _clear_default_address(db, current_user.id)
     address = (
         db.query(models.Address)
         .filter(models.Address.id == address_id, models.Address.user_id == current_user.id)

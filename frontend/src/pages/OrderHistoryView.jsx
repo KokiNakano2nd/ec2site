@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cancelOrder, fetchOrders, requestOrderReturn } from "../api/orders";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { C } from "../lib/constants";
 import { fmt, fmtDate, statusConfig } from "../lib/format";
 
@@ -48,9 +49,7 @@ export function OrderHistoryView() {
         {orders.length > 0 ? `${orders.length}件の注文` : "注文履歴はありません"}
       </p>
       {error && (
-        <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14, marginBottom: 20 }}>
-          {error}
-        </div>
+        <ErrorBanner>{error}</ErrorBanner>
       )}
       {orders.length === 0 && !error && (
         <div style={{ textAlign: "center", padding: "80px 40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20 }}>

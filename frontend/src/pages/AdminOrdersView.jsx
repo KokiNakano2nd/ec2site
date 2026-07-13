@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchAdminOrders, resolveOrderReturn, updateOrderStatus } from "../api/admin";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { C, ORDER_STATUSES } from "../lib/constants";
 import { fmt, fmtDate, statusConfig } from "../lib/format";
 
@@ -50,9 +51,7 @@ export function AdminOrdersView({ showToast }) {
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.6px", color: C.text }}>全注文一覧</h1>
       </div>
       {error && (
-        <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14, marginBottom: 20 }}>
-          {error}
-        </div>
+        <ErrorBanner>{error}</ErrorBanner>
       )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
         <StatCard label="総注文数" value={<>{orders.length}<span style={{ fontSize: 14, color: C.muted, fontWeight: 400, marginLeft: 4 }}>件</span></>} />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createAdminCoupon, deleteAdminCoupon, fetchAdminCoupons, toggleAdminCoupon, updateAdminCoupon } from "../api/coupons";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
 import { fmt, fmtDate } from "../lib/format";
@@ -91,9 +92,7 @@ export function AdminCouponsView({ showToast }) {
       </div>
 
       {error && (
-        <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14, marginBottom: 20 }}>
-          {error}
-        </div>
+        <ErrorBanner>{error}</ErrorBanner>
       )}
 
       {showForm && (

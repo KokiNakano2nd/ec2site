@@ -20,7 +20,7 @@ def test_register_sends_verification_email_and_creates_unverified_user(client, m
         sent["email"] = email
         sent["link"] = link
 
-    monkeypatch.setattr("app.main.send_verification_email", fake_send)
+    monkeypatch.setattr("app.email_utils.send_verification_email", fake_send)
 
     res = client.post(
         "/auth/register", json={"email": "verify-me@example.com", "password": "password123"}
@@ -37,7 +37,7 @@ def test_register_sends_verification_email_and_creates_unverified_user(client, m
 
 
 def test_confirm_verification_with_valid_token_marks_user_verified(client, monkeypatch):
-    monkeypatch.setattr("app.main.send_verification_email", lambda email, link: None)
+    monkeypatch.setattr("app.email_utils.send_verification_email", lambda email, link: None)
     client.post("/auth/register", json={"email": "verify-me@example.com", "password": "password123"})
     token = _get_verification_token("verify-me@example.com")
 
@@ -52,7 +52,7 @@ def test_confirm_verification_with_valid_token_marks_user_verified(client, monke
 
 
 def test_confirm_verification_token_is_single_use(client, monkeypatch):
-    monkeypatch.setattr("app.main.send_verification_email", lambda email, link: None)
+    monkeypatch.setattr("app.email_utils.send_verification_email", lambda email, link: None)
     client.post("/auth/register", json={"email": "verify-me@example.com", "password": "password123"})
     token = _get_verification_token("verify-me@example.com")
 
@@ -72,7 +72,7 @@ def test_confirm_verification_with_expired_token_returns_400(client, monkeypatch
     from app.database import SessionLocal
     from app import models
 
-    monkeypatch.setattr("app.main.send_verification_email", lambda email, link: None)
+    monkeypatch.setattr("app.email_utils.send_verification_email", lambda email, link: None)
     client.post("/auth/register", json={"email": "verify-me@example.com", "password": "password123"})
     token = _get_verification_token("verify-me@example.com")
 
@@ -100,7 +100,7 @@ def test_resend_verification_sends_new_token(client, auth_headers, monkeypatch):
         sent["email"] = email
         sent["link"] = link
 
-    monkeypatch.setattr("app.main.send_verification_email", fake_send)
+    monkeypatch.setattr("app.email_utils.send_verification_email", fake_send)
 
     old_token = _get_verification_token("user@example.com")
 

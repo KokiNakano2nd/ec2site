@@ -107,10 +107,10 @@ def test_admin_reject_return_sends_dedicated_notification(client, auth_headers, 
     rejected_calls = []
     status_calls = []
     monkeypatch.setattr(
-        "app.main.send_return_rejected_email", lambda email, order_id: rejected_calls.append((email, order_id))
+        "app.email_utils.send_return_rejected_email", lambda email, order_id: rejected_calls.append((email, order_id))
     )
     monkeypatch.setattr(
-        "app.main.send_status_notification",
+        "app.email_utils.send_status_notification",
         lambda email, order_id, status: status_calls.append((email, order_id, status)),
     )
 

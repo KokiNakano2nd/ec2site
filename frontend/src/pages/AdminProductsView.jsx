@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { createProduct, deleteProduct, updateProduct } from "../api/admin";
 import { addProductImage, deleteProductImage, fetchProducts } from "../api/products";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldLabel } from "../components/FieldLabel";
+import { ProductImageManager } from "../components/ProductImageManager";
 import { C } from "../lib/constants";
 import { fmt } from "../lib/format";
 
@@ -135,9 +137,7 @@ export function AdminProductsView({ showToast }) {
       </div>
 
       {error && (
-        <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14, marginBottom: 20 }}>
-          {error}
-        </div>
+        <ErrorBanner>{error}</ErrorBanner>
       )}
 
       {showNewForm && (
@@ -235,44 +235,15 @@ export function AdminProductsView({ showToast }) {
                 {managingImagesFor === product.id && (
                   <tr key={`images-${product.id}`}>
                     <td colSpan={6} style={{ padding: "0 20px 20px" }}>
-                      <div style={{ background: C.dark, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animation: "fadeUp 0.2s ease" }}>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: C.sec, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>追加画像管理（メイン画像は商品編集で変更）</p>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-                          {productImages.length === 0 && (
-                            <p style={{ fontSize: 13, color: C.muted }}>追加画像はありません</p>
-                          )}
-                          {productImages.map((img) => (
-                            <div key={img.id} style={{ position: "relative", width: 80, height: 80 }}>
-                              <img src={img.image_url} alt="product" style={{ width: 80, height: 80, objectFit: "contain", background: C.surface, borderRadius: 8, border: `1px solid ${C.border}` }} />
-                              <button
-                                onClick={() => handleDeleteImage(img.id, product.id)}
-                                style={{
-                                  position: "absolute", top: -6, right: -6, width: 20, height: 20,
-                                  background: C.red, border: "none", borderRadius: "50%", cursor: "pointer",
-                                  color: "#fff", fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                                }}
-                              >×</button>
-                              <span style={{ display: "block", fontSize: 10, color: C.muted, textAlign: "center", marginTop: 2 }}>#{img.display_order + 1}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <input
-                            style={{ ...inputStyle, flex: 1 }}
-                            placeholder="追加画像URL（https://...）"
-                            value={newImageUrl}
-                            onChange={(e) => setNewImageUrl(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleAddImage(product.id)}
-                          />
-                          <button
-                            className="btn-primary"
-                            onClick={() => handleAddImage(product.id)}
-                            disabled={!newImageUrl.trim()}
-                            style={{ padding: "6px 16px", fontSize: 13, borderRadius: 8, whiteSpace: "nowrap" }}
-                          >+ 追加</button>
-                        </div>
-                        {imageError && <p style={{ fontSize: 12, color: C.red, marginTop: 8 }}>{imageError}</p>}
-                      </div>
+                      <ProductImageManager
+                        images={productImages}
+                        newImageUrl={newImageUrl}
+                        onNewImageUrlChange={(e) => setNewImageUrl(e.target.value)}
+                        onAdd={() => handleAddImage(product.id)}
+                        onDelete={(imageId) => handleDeleteImage(imageId, product.id)}
+                        error={imageError}
+                        inputStyle={inputStyle}
+                      />
                     </td>
                   </tr>
                 )}

@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import auth, models, schemas
+from .. import auth, config, models, schemas, stripe_client
 from ..database import get_db
+from ..logging_config import get_logger
+from ..services.order_actions import calculate_subtotal, fulfill_order
 from ..services.order_calc import calculate_discount, calculate_total
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
 @router.get("/config")
 def get_config():
-    from .. import main
-
-    return {"stripe_enabled": bool(main.STRIPE_SECRET_KEY)}
+    return {"stripe_enabled": bool(config.STRIPE_SECRET_KEY)}
 
 
 @router.post("/payment/checkout")
@@ -21,16 +22,14 @@ def create_checkout_session(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    from .. import main
-
-    if not main.STRIPE_SECRET_KEY:
+    if not config.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=400, detail="Stripeが設定されていません")
 
     cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
     if not cart_items:
         raise HTTPException(status_code=400, detail="カートが空です")
 
-    subtotal = sum(item.quantity * item.product.price for item in cart_items)
+    subtotal = calculate_subtotal(cart_items)
     discount_amount = 0.0
     if order_in.coupon_code:
         coupon = (
@@ -40,11 +39,11 @@ def create_checkout_session(
         )
         discount_amount = calculate_discount(subtotal, coupon)
 
-    discounted = subtotal - discount_amount
-    total_with_tax = int(discounted * 1.1)
+    _discounted_subtotal, _tax, total_price = calculate_total(subtotal, discount_amount)
+    total_with_tax = int(total_price)
 
     try:
-        session = main.stripe_lib.checkout.Session.create(
+        session = stripe_client.stripe_lib.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
                 "price_data": {
@@ -55,8 +54,8 @@ def create_checkout_session(
                 "quantity": 1,
             }],
             mode="payment",
-            success_url=f"{main.FRONTEND_URL}/?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{main.FRONTEND_URL}/",
+            success_url=f"{config.FRONTEND_URL}/?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{config.FRONTEND_URL}/",
             metadata={
                 "user_id": str(current_user.id),
                 "coupon_code": order_in.coupon_code or "",
@@ -65,7 +64,7 @@ def create_checkout_session(
         )
         return {"session_url": session.url}
     except Exception as e:
-        main.logger.error("Stripe checkout session作成に失敗しました(user_id=%s): %s", current_user.id, e)
+        logger.error("Stripe checkout session作成に失敗しました(user_id=%s): %s", current_user.id, e)
         raise HTTPException(status_code=500, detail=f"Stripe エラー: {str(e)}")
 
 
@@ -75,21 +74,19 @@ def complete_payment(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    from .. import main
-
-    if not main.STRIPE_SECRET_KEY:
+    if not config.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=400, detail="Stripeが設定されていません")
 
     try:
-        session = main.stripe_lib.checkout.Session.retrieve(session_id)
+        session = stripe_client.stripe_lib.checkout.Session.retrieve(session_id)
     except Exception as e:
-        main.logger.error("Stripe session取得に失敗しました(session_id=%s): %s", session_id, e)
+        logger.error("Stripe session取得に失敗しました(session_id=%s): %s", session_id, e)
         raise HTTPException(status_code=400, detail=f"セッション取得失敗: {str(e)}")
 
     if session.payment_status != "paid":
         raise HTTPException(status_code=400, detail="支払いが完了していません")
     if str(session.metadata.get("user_id")) != str(current_user.id):
-        main.logger.warning(
+        logger.warning(
             "他ユーザーの決済セッションへのアクセス試行(session_id=%s, session_user_id=%s, request_user_id=%s)",
             session_id, session.metadata.get("user_id"), current_user.id,
         )
@@ -100,7 +97,7 @@ def complete_payment(
         raise HTTPException(status_code=400, detail="カートが空です（既に注文済みかもしれません）")
 
     coupon_code = session.metadata.get("coupon_code") or None
-    subtotal = sum(item.quantity * item.product.price for item in cart_items)
+    subtotal = calculate_subtotal(cart_items)
     discount_amount = 0.0
     applied_coupon = None
     if coupon_code:
@@ -115,39 +112,14 @@ def complete_payment(
 
     _discounted_subtotal, _tax, total_price = calculate_total(subtotal, discount_amount)
 
-    order = models.Order(
-        user_id=current_user.id,
+    return fulfill_order(
+        db,
+        user=current_user,
+        cart_items=cart_items,
         total_price=total_price,
         discount_amount=discount_amount,
         coupon_code=coupon_code,
         status="processing",
+        applied_coupon=applied_coupon,
         stripe_payment_intent_id=session.payment_intent,
     )
-    db.add(order)
-    db.flush()
-
-    if applied_coupon:
-        applied_coupon.used_count += 1
-
-    for cart_item in cart_items:
-        order_item = models.OrderItem(
-            order_id=order.id,
-            product_id=cart_item.product_id,
-            quantity=cart_item.quantity,
-            price=cart_item.product.price,
-        )
-        cart_item.product.stock -= cart_item.quantity
-        db.add(order_item)
-        db.delete(cart_item)
-
-    db.commit()
-    db.refresh(order)
-
-    main.send_order_confirmation(
-        user_email=current_user.email,
-        order_id=order.id,
-        total_price=order.total_price,
-        items=[{"name": item.product.name, "quantity": item.quantity, "price": item.price} for item in order.items],
-    )
-
-    return order

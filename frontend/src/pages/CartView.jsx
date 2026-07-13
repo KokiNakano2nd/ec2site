@@ -5,6 +5,8 @@ import { validateCoupon } from "../api/coupons";
 import { createOrder } from "../api/orders";
 import { createCheckoutSession, fetchConfig } from "../api/payment";
 import { useAuth } from "../AuthContext";
+import { CouponBox } from "../components/CouponBox";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
 import { fmt } from "../lib/format";
@@ -116,9 +118,7 @@ export function CartView({ onOrderComplete, showToast }) {
     <div style={{ animation: "fadeUp 0.3s ease" }}>
       <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.8px", color: C.text, marginBottom: 32 }}>ショッピングカート</h1>
       {error && (
-        <div style={{ color: C.red, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: "16px 20px", fontSize: 14, marginBottom: 20 }}>
-          {error}
-        </div>
+        <ErrorBanner>{error}</ErrorBanner>
       )}
       {items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "100px 40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20 }}>
@@ -152,35 +152,15 @@ export function CartView({ onOrderComplete, showToast }) {
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, position: "sticky", top: 88 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 20, letterSpacing: "-0.2px" }}>注文サマリー</h2>
 
-            <div style={{ marginBottom: 16 }}>
-              <FieldLabel>クーポンコード</FieldLabel>
-              {appliedCoupon ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "10px 14px" }}>
-                  <span style={{ fontSize: 12, color: C.green, fontWeight: 700, flex: 1 }}>
-                    ✓ {appliedCoupon.code}（{appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%OFF` : `¥${fmt(appliedCoupon.discount_value)}OFF`}）
-                  </span>
-                  <button onClick={handleRemoveCoupon} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
-                </div>
-              ) : (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    className="field-input"
-                    style={{ flex: 1, fontSize: 13, padding: "8px 12px" }}
-                    placeholder="コードを入力"
-                    value={couponInput}
-                    onChange={(e) => { setCouponInput(e.target.value); setCouponError(null); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                  />
-                  <button
-                    className="btn-surface"
-                    onClick={handleApplyCoupon}
-                    disabled={couponLoading || !couponInput.trim()}
-                    style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
-                  >{couponLoading ? "..." : "適用"}</button>
-                </div>
-              )}
-              {couponError && <p style={{ fontSize: 12, color: C.red, marginTop: 6 }}>{couponError}</p>}
-            </div>
+            <CouponBox
+              couponInput={couponInput}
+              onCouponInputChange={(e) => { setCouponInput(e.target.value); setCouponError(null); }}
+              appliedCoupon={appliedCoupon}
+              onApply={handleApplyCoupon}
+              onRemove={handleRemoveCoupon}
+              couponError={couponError}
+              couponLoading={couponLoading}
+            />
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>

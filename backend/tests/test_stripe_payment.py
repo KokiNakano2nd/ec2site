@@ -43,7 +43,7 @@ def test_checkout_requires_nonempty_cart(client, auth_headers, stripe_enabled):
 def test_checkout_creates_session_url(client, auth_headers, stripe_enabled, monkeypatch):
     _add_to_cart(client, auth_headers)
     monkeypatch.setattr(
-        "app.main.stripe_lib.checkout.Session.create", lambda **kwargs: FakeCheckoutSession()
+        "app.stripe_client.stripe_lib.checkout.Session.create", lambda **kwargs: FakeCheckoutSession()
     )
 
     res = client.post("/payment/checkout", headers=auth_headers)
@@ -67,7 +67,7 @@ def test_checkout_applies_coupon_discount_to_session_amount(
         captured.update(kwargs)
         return FakeCheckoutSession()
 
-    monkeypatch.setattr("app.main.stripe_lib.checkout.Session.create", fake_create)
+    monkeypatch.setattr("app.stripe_client.stripe_lib.checkout.Session.create", fake_create)
 
     res_no_coupon = client.post("/payment/checkout", headers=auth_headers)
     assert res_no_coupon.status_code == 200
@@ -89,7 +89,7 @@ def test_checkout_stripe_error_returns_500(client, auth_headers, stripe_enabled,
     def fake_create(**kwargs):
         raise Exception("stripe down (mocked)")
 
-    monkeypatch.setattr("app.main.stripe_lib.checkout.Session.create", fake_create)
+    monkeypatch.setattr("app.stripe_client.stripe_lib.checkout.Session.create", fake_create)
 
     res = client.post("/payment/checkout", headers=auth_headers)
     assert res.status_code == 500
@@ -105,7 +105,7 @@ def test_complete_payment_session_retrieve_failure(client, auth_headers, stripe_
     def fake_retrieve(session_id):
         raise Exception("session not found (mocked)")
 
-    monkeypatch.setattr("app.main.stripe_lib.checkout.Session.retrieve", fake_retrieve)
+    monkeypatch.setattr("app.stripe_client.stripe_lib.checkout.Session.retrieve", fake_retrieve)
 
     res = client.post("/payment/complete", params={"session_id": "cs_bogus"}, headers=auth_headers)
     assert res.status_code == 400
@@ -114,7 +114,7 @@ def test_complete_payment_session_retrieve_failure(client, auth_headers, stripe_
 def test_complete_payment_not_paid_returns_400(client, auth_headers, stripe_enabled, monkeypatch):
     user_id = _current_user_id(client, auth_headers)
     monkeypatch.setattr(
-        "app.main.stripe_lib.checkout.Session.retrieve",
+        "app.stripe_client.stripe_lib.checkout.Session.retrieve",
         lambda session_id: FakeCompletedSession(user_id, payment_status="unpaid"),
     )
 
@@ -125,7 +125,7 @@ def test_complete_payment_not_paid_returns_400(client, auth_headers, stripe_enab
 
 def test_complete_payment_wrong_user_returns_403(client, auth_headers, stripe_enabled, monkeypatch):
     monkeypatch.setattr(
-        "app.main.stripe_lib.checkout.Session.retrieve",
+        "app.stripe_client.stripe_lib.checkout.Session.retrieve",
         lambda session_id: FakeCompletedSession(user_id=999999),
     )
 
@@ -136,7 +136,7 @@ def test_complete_payment_wrong_user_returns_403(client, auth_headers, stripe_en
 def test_complete_payment_empty_cart_returns_400(client, auth_headers, stripe_enabled, monkeypatch):
     user_id = _current_user_id(client, auth_headers)
     monkeypatch.setattr(
-        "app.main.stripe_lib.checkout.Session.retrieve",
+        "app.stripe_client.stripe_lib.checkout.Session.retrieve",
         lambda session_id: FakeCompletedSession(user_id),
     )
 
@@ -159,7 +159,7 @@ def test_complete_payment_creates_order_and_applies_coupon(
     stock_before = product["stock"]
 
     monkeypatch.setattr(
-        "app.main.stripe_lib.checkout.Session.retrieve",
+        "app.stripe_client.stripe_lib.checkout.Session.retrieve",
         lambda session_id: FakeCompletedSession(user_id, coupon_code="STRIPE10"),
     )
 

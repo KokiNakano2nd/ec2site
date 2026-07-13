@@ -18,6 +18,17 @@ import { ProductDetail } from "./ProductDetail";
 import { ProductList } from "./ProductList";
 import { ProfileView } from "./ProfileView";
 
+function useQueryParamCallback(paramName, { match = (v) => !!v, onMatch, deps = [] }) {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get(paramName);
+    if (!match(value)) return;
+    window.history.replaceState({}, "", "/");
+    onMatch(value, params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
 export function MainView() {
   const { token } = useAuth();
   const [view, setView] = useState("products");
@@ -27,24 +38,20 @@ export function MainView() {
   const [favItems, setFavItems] = useState([]);
   const [resetToken, setResetToken] = useState(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const t = params.get("token");
-    if (!t) return;
-    window.history.replaceState({}, "", "/");
-    setResetToken(t);
-    setView("password-reset-confirm");
-  }, []);
+  useQueryParamCallback("token", {
+    onMatch: (t) => {
+      setResetToken(t);
+      setView("password-reset-confirm");
+    },
+  });
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const verifyToken = params.get("verify_token");
-    if (!verifyToken) return;
-    window.history.replaceState({}, "", "/");
-    confirmEmailVerification(verifyToken)
-      .then(() => showToast("メールアドレスを確認しました"))
-      .catch((err) => showToast(err.message));
-  }, []);
+  useQueryParamCallback("verify_token", {
+    onMatch: (verifyToken) => {
+      confirmEmailVerification(verifyToken)
+        .then(() => showToast("メールアドレスを確認しました"))
+        .catch((err) => showToast(err.message));
+    },
+  });
 
   const favProductIds = new Set(favItems.map((f) => f.product.id));
 
@@ -53,20 +60,20 @@ export function MainView() {
     fetchFavorites(token).then(setFavItems).catch(() => {});
   }, [token]);
 
-  useEffect(() => {
-    if (!token) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") !== "success") return;
-    const sessionId = params.get("session_id");
-    window.history.replaceState({}, "", "/");
-    if (!sessionId) return;
-    completePayment(token, sessionId)
-      .then(() => {
-        showToast("ご注文ありがとうございます！（Stripe決済完了）");
-        navigate("orders");
-      })
-      .catch((err) => showToast(err.message));
-  }, [token]);
+  useQueryParamCallback("payment", {
+    match: (v) => !!token && v === "success",
+    onMatch: (_v, params) => {
+      const sessionId = params.get("session_id");
+      if (!sessionId) return;
+      completePayment(token, sessionId)
+        .then(() => {
+          showToast("ご注文ありがとうございます！（Stripe決済完了）");
+          navigate("orders");
+        })
+        .catch((err) => showToast(err.message));
+    },
+    deps: [token],
+  });
 
   async function toggleFav(productId) {
     if (!token) { setView("login"); return; }

@@ -3,6 +3,7 @@ import { fetchReviews, postReview } from "../api/reviews";
 import { useAuth } from "../AuthContext";
 import { C } from "../lib/constants";
 import { fmtDate } from "../lib/format";
+import { ErrorBanner } from "./ErrorBanner";
 import { FieldLabel } from "./FieldLabel";
 import { StarRating } from "./StarRating";
 
@@ -72,9 +73,9 @@ export function ReviewsSection({ productId, onNavigateLogin, showToast }) {
               />
             </div>
             {error && (
-              <div style={{ color: C.red, fontSize: 13, marginBottom: 12, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 8, padding: "10px 14px" }}>
+              <ErrorBanner size="sm" style={{ borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
                 {error}
-              </div>
+              </ErrorBanner>
             )}
             <button className="btn-primary" type="submit" disabled={submitting} style={{ padding: "10px 24px", fontSize: 14, borderRadius: 10 }}>
               {submitting ? "送信中..." : token ? "投稿する" : "ログインして投稿"}
