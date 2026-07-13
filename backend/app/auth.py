@@ -2,6 +2,8 @@ import os
 from datetime import datetime, timedelta
 
 import bcrypt
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -14,15 +16,42 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+PASSWORD_HASHER = PasswordHasher()
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    return PASSWORD_HASHER.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    if hashed_password.startswith("$argon2"):
+        try:
+            return PASSWORD_HASHER.verify(hashed_password, plain_password)
+        except (InvalidHashError, VerificationError):
+            return False
+
+    if hashed_password.startswith(("$2a$", "$2b$", "$2y$")):
+        try:
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        except ValueError:
+            return False
+
+    return False
+
+
+def password_needs_rehash(hashed_password: str) -> bool:
+    if hashed_password.startswith(("$2a$", "$2b$", "$2y$")):
+        return True
+
+    if hashed_password.startswith("$argon2"):
+        try:
+            return PASSWORD_HASHER.check_needs_rehash(hashed_password)
+        except InvalidHashError:
+            return False
+
+    return False
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

@@ -55,6 +55,10 @@ def login(credentials: schemas.UserLogin, request: Request, db: Session = Depend
     if user is None or not auth.verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
 
+    if auth.password_needs_rehash(user.hashed_password):
+        user.hashed_password = auth.hash_password(credentials.password)
+        db.commit()
+
     access_token = auth.create_access_token(data={"sub": str(user.id)})
     return schemas.Token(access_token=access_token)
 
