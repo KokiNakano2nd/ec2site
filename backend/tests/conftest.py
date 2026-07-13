@@ -10,6 +10,7 @@ os.environ.setdefault("SMTP_HOST", "")
 import pytest
 from fastapi.testclient import TestClient
 
+from app import rate_limit
 from app.database import Base, engine
 from app.main import app
 
@@ -20,6 +21,7 @@ TEST_PASSWORD = "password123"
 def _reset_db():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    rate_limit.reset()
     yield
     Base.metadata.drop_all(bind=engine)
 

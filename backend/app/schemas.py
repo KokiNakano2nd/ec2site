@@ -71,12 +71,17 @@ class PasswordResetConfirm(BaseModel):
     new_password: str
 
 
+class EmailVerificationConfirm(BaseModel):
+    token: str
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     email: str
     is_admin: bool
+    is_verified: bool
     created_at: datetime
 
 

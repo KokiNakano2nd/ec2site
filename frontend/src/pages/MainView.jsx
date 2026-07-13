@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { confirmEmailVerification } from "../api/auth";
 import { addFavorite, fetchFavorites, removeFavorite } from "../api/favorites";
 import { completePayment } from "../api/payment";
 import { useAuth } from "../AuthContext";
@@ -33,6 +34,16 @@ export function MainView() {
     window.history.replaceState({}, "", "/");
     setResetToken(t);
     setView("password-reset-confirm");
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verifyToken = params.get("verify_token");
+    if (!verifyToken) return;
+    window.history.replaceState({}, "", "/");
+    confirmEmailVerification(verifyToken)
+      .then(() => showToast("メールアドレスを確認しました"))
+      .catch((err) => showToast(err.message));
   }, []);
 
   const favProductIds = new Set(favItems.map((f) => f.product.id));

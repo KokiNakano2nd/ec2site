@@ -2,19 +2,30 @@ import os
 import secrets
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from .. import auth, models, schemas
+from .. import auth, models, rate_limit, schemas
 from ..database import get_db
 
 router = APIRouter()
 
 PASSWORD_RESET_TOKEN_EXPIRY = timedelta(hours=24)
+EMAIL_VERIFICATION_TOKEN_EXPIRY = timedelta(days=7)
+
+REGISTER_RATE_LIMIT = (5, 60 * 60)  # 5 requests / hour per IP (NFR-022)
+LOGIN_RATE_LIMIT = (10, 15 * 60)  # 10 requests / 15 minutes per IP (NFR-022)
+RATE_LIMIT_MESSAGE = "リクエストが多すぎます。しばらくしてから再度お試しください"
 
 
 @router.post("/auth/register", response_model=schemas.UserOut, status_code=201)
-def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+def register(user_in: schemas.UserCreate, request: Request, db: Session = Depends(get_db)):
+    from .. import main
+
+    max_requests, window_seconds = REGISTER_RATE_LIMIT
+    if not rate_limit.check_rate_limit(f"register:{request.client.host}", max_requests, window_seconds):
+        raise HTTPException(status_code=429, detail=RATE_LIMIT_MESSAGE)
+
     existing = db.query(models.User).filter(models.User.email == user_in.email).first()
     if existing is not None:
         raise HTTPException(status_code=400, detail="このメールアドレスは既に登録されています")
@@ -22,15 +33,25 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     user = models.User(
         email=user_in.email,
         hashed_password=auth.hash_password(user_in.password),
+        email_verification_token=secrets.token_urlsafe(32),
+        email_verification_token_expires_at=datetime.utcnow() + EMAIL_VERIFICATION_TOKEN_EXPIRY,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    verify_link = f"{main.FRONTEND_URL}/?verify_token={user.email_verification_token}"
+    main.send_verification_email(user.email, verify_link)
+
     return user
 
 
 @router.post("/auth/login", response_model=schemas.Token)
-def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
+def login(credentials: schemas.UserLogin, request: Request, db: Session = Depends(get_db)):
+    max_requests, window_seconds = LOGIN_RATE_LIMIT
+    if not rate_limit.check_rate_limit(f"login:{request.client.host}", max_requests, window_seconds):
+        raise HTTPException(status_code=429, detail=RATE_LIMIT_MESSAGE)
+
     user = db.query(models.User).filter(models.User.email == credentials.email).first()
     if user is None or not auth.verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
@@ -104,6 +125,45 @@ def confirm_password_reset(body: schemas.PasswordResetConfirm, db: Session = Dep
     user.hashed_password = auth.hash_password(body.new_password)
     user.password_reset_token = None
     user.password_reset_token_expires_at = None
+    db.commit()
+
+    return {}
+
+
+@router.post("/auth/verify-email/resend", status_code=200)
+def resend_verification_email(
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    from .. import main
+
+    current_user.email_verification_token = secrets.token_urlsafe(32)
+    current_user.email_verification_token_expires_at = datetime.utcnow() + EMAIL_VERIFICATION_TOKEN_EXPIRY
+    db.commit()
+
+    verify_link = f"{main.FRONTEND_URL}/?verify_token={current_user.email_verification_token}"
+    main.send_verification_email(current_user.email, verify_link)
+
+    return {}
+
+
+@router.post("/auth/verify-email/confirm", status_code=200)
+def confirm_email_verification(body: schemas.EmailVerificationConfirm, db: Session = Depends(get_db)):
+    user = (
+        db.query(models.User)
+        .filter(models.User.email_verification_token == body.token)
+        .first()
+    )
+    if (
+        user is None
+        or user.email_verification_token_expires_at is None
+        or user.email_verification_token_expires_at < datetime.utcnow()
+    ):
+        raise HTTPException(status_code=400, detail="リンクが無効です。再度お手続きください")
+
+    user.is_verified = True
+    user.email_verification_token = None
+    user.email_verification_token_expires_at = None
     db.commit()
 
     return {}

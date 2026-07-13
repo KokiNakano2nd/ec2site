@@ -421,6 +421,53 @@ sequenceDiagram
 - 確定(`confirm`)ステップの成功時、`password_reset_token`をNULLにクリアすることでトークンを1回限りの使用に制限する
 - パスワードリセット成功後も、それ以前に発行済みのJWTアクセストークンは個別には失効しない(本システムのJWTの制約。UC-009備考参照)
 
+## UC-010: メールアドレスの本人確認を行う(2026-07-13追加)
+
+`POST /auth/register`(確認メール送信部分)・`POST /auth/verify-email/resend`・`POST /auth/verify-email/confirm`(`backend/app/routers/users.py`、F-037)に対応する。確認リンクのクリックがフォーム入力を伴わず、アプリ起動時に自動的に確認APIを呼び出す点が他のUCと異なるため、シーケンス図で明示する。
+
+```mermaid
+sequenceDiagram
+    actor 顧客
+    participant Frontend as フロントエンド(AuthView / ProfileView / MainView)
+    participant API as routers/users.py(/auth/register, /auth/verify-email)
+    participant DB as DB(users)
+    participant Mail as email_utils(send_verification_email)
+
+    顧客->>Frontend: 会員登録する(既存フロー)
+    Frontend->>API: POST /auth/register (email, password)
+    API->>DB: usersにis_verified=falseでレコードを作成する
+    API->>DB: email_verification_token(ランダム値)・email_verification_token_expires_at(現在時刻+7日)を保存する
+    DB-->>API: コミット完了
+    API->>Mail: send_verification_email(email, verify_link)
+    Mail-->>API: 送信完了(またはログ出力のみ)
+    API-->>Frontend: 201 UserOut(is_verified=false)
+
+    opt 顧客がメールを見つけられない場合(代替フロー)
+        顧客->>Frontend: プロフィール画面で「確認メールを再送する」
+        Frontend->>API: POST /auth/verify-email/resend (Bearerトークン)
+        API->>DB: email_verification_token・有効期限を新しい値で上書きする
+        API->>Mail: send_verification_email(email, verify_link)
+        API-->>Frontend: 200
+    end
+
+    顧客->>Frontend: 確認メール内のリンク(?verify_token=...)を開く
+    Frontend->>Frontend: アプリ起動時にクエリパラメータを検知する(フォーム入力なし)
+    Frontend->>API: POST /auth/verify-email/confirm (token)
+    API->>DB: email_verification_tokenが一致し、email_verification_token_expires_atが現在時刻より後のユーザーを検索する
+    alt トークンが無効・期限切れ
+        API-->>Frontend: 400「リンクが無効です。再度お手続きください」
+        Frontend->>顧客: トースト通知でエラーを表示する
+    else トークンが有効
+        API->>DB: is_verified=trueに更新し、email_verification_token・email_verification_token_expires_atをNULLにクリアする
+        DB-->>API: コミット完了
+        API-->>Frontend: 200
+        Frontend->>顧客: トースト通知で「メールアドレスを確認しました」を表示する
+    end
+```
+
+- メールアドレスが未確認(`is_verified=false`)であっても、本シーケンス以外の既存フロー(ログイン・注文等)は一切変更せず、制限も加えない(非ブロッキング設計、UC-010備考参照)
+- 確認リンクのクリックはフォーム入力を伴わないため、既存のStripe決済完了時の`?payment=success`クエリパラメータ処理と同じ仕組み(`MainView`のマウント時副作用)を流用する
+
 ## 補足: UC-002とUC-003の内部処理の違い
 
 - UC-003(`POST /orders`)はクーポンコードが無効な場合に**400エラーで処理を中断する**が、UC-002(`POST /payment/checkout` / `POST /payment/complete`)はクーポンコードが無効な場合に**エラーにせず割引なしで処理を続行する**(`if coupon:` のみで判定し、`else`のエラー処理がない)。この差異は実装上の挙動であり、意図的な仕様か実装漏れかは要件定義フェーズ・業務エキスパートへの確認が必要な点として、`04_error_handling_design.md`に改善提案として記載する。

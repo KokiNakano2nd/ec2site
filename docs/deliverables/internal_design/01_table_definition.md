@@ -38,6 +38,9 @@ classDiagram
         +datetime created_at
         +string password_reset_token
         +datetime password_reset_token_expires_at
+        +bool is_verified
+        +string email_verification_token
+        +datetime email_verification_token_expires_at
     }
     class addresses {
         +int id PK
@@ -164,9 +167,14 @@ classDiagram
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 | password_reset_token | STRING | index | NULL可 | なし | パスワードリセット用トークン。未発行・使用済みの場合`NULL`(2026-07-13追加、F-036) |
 | password_reset_token_expires_at | DATETIME | | NULL可 | なし | リセットトークンの有効期限(発行から24時間後)。`password_reset_token`が`NULL`の場合は無意味(2026-07-13追加、F-036) |
+| is_verified | BOOLEAN | | NOT NULL | false | メールアドレス確認済みフラグ。未確認であってもログイン等の既存機能は制限しない(2026-07-13追加、F-037) |
+| email_verification_token | STRING | index | NULL可 | なし | メールアドレス確認用トークン。未発行・使用済みの場合`NULL`(2026-07-13追加、F-037) |
+| email_verification_token_expires_at | DATETIME | | NULL可 | なし | 確認用トークンの有効期限(発行から7日後)。`email_verification_token`が`NULL`の場合は無意味(2026-07-13追加、F-037) |
 
 - インデックス: `email` に一意インデックス(`unique=True, index=True`)を実装で明示的に付与している。退会後は匿名化されたメールアドレス(`deleted-user-{id}@deleted.invalid`)に書き換わるため、一意制約に抵触せず同一メールアドレスでの再登録が可能になる
 - インデックス: `password_reset_token` にインデックス(`index=True`)を付与し、トークン検証時の検索を高速化する(2026-07-13追加)
+- インデックス: `email_verification_token` にインデックス(`index=True`)を付与し、トークン検証時の検索を高速化する(2026-07-13追加)
+- 本テーブルへのカラム追加は`Base.metadata.create_all`ベースで行っており、正式なマイグレーション(既存テーブルへの`ALTER TABLE`)は対象外(`06_nonfunctional_requirements.md`の移行性に関する既存の記載を参照)。新規に作成されるDBには反映されるが、既存の永続化されたDBファイルには自動反映されない点に留意
 
 ### addresses テーブル
 

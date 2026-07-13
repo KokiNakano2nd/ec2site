@@ -101,6 +101,7 @@ flowchart LR
 | 商品管理業務(管理者) | US-013, US-014, US-015, US-024(2026-07-12追加) | (なし) | F-020〜F-022, F-034 | S-101(低在庫バッジ), S-104(低在庫アラート) | `02_module_design.md`「/admin/products」行、`03_sequence_diagram.md`「低在庫アラートを確認する(管理者)」 |
 | クーポン管理業務(管理者) | US-016, US-017, US-025(2026-07-13追加) | (なし) | F-023〜F-026, F-035 | S-102(残数僅少バッジ), S-104(クーポン残数アラート) | 同上「/admin/coupons」行、`03_sequence_diagram.md`「クーポン残数アラートを確認する(管理者)」 |
 | 会員管理業務(パスワードリセット、2026-07-13追加) | US-026 | UC-009 | F-036 | S-008, S-009(ログイン画面(S-005)からリンク) | `02_module_design.md`「/auth/password-reset」行、`03_sequence_diagram.md`「UC-009」 |
+| 会員管理業務(メールアドレスの本人確認、2026-07-13追加) | US-027 | UC-010 | F-037 | S-007(バッジ・再送ボタン。専用の確認画面は起こさず) | `02_module_design.md`「/auth/verify-email」行、`03_sequence_diagram.md`「UC-010」 |
 | 注文管理業務(管理者) | US-018, US-023(2026-07-11追加) | (なし)、US-023のみUC-008化 | F-027, F-028, F-033 | S-103(返品承認・却下) | `03_sequence_diagram.md`「注文ステータスを更新する(管理者)」「UC-008」 |
 | 売上分析業務(管理者) | US-019 | (なし) | F-029 | S-104 | `02_module_design.md`「/admin/analytics」行 |
 
@@ -139,10 +140,10 @@ flowchart LR
 | フェーズ | 概要ファイル(入口) | 詳細ファイルの格納先 | 分離単位 |
 |---|---|---|---|
 | 要求定義 | [01_business_flow.md](deliverables/demand_definition/01_business_flow.md) | `deliverables/demand_definition/business_flow/` | 1業務=1ファイル(9業務) |
-| 要求定義 | [02_user_stories.md](deliverables/demand_definition/02_user_stories.md) | `deliverables/demand_definition/user_stories/` | 1User Story=1ファイル(26件、2026-07-13 US-026追加) |
-| 要件定義 | [01_use_cases.md](deliverables/requirements/01_use_cases.md) | `deliverables/requirements/use_cases/` | 1ユースケース=1ファイル(9件、2026-07-13 UC-009追加) |
-| 要件定義 | [03_function_list.md](deliverables/requirements/03_function_list.md) | `deliverables/requirements/function_list/` | 1機能=1ファイル(36件、2026-07-13 F-036追加) |
-| 外部設計 | [02_api_spec.md](deliverables/external_design/02_api_spec.md) | `deliverables/external_design/api_spec/` | 1エンドポイント=1ファイル(49件、2026-07-13 パスワードリセット要求/確定の2件追加) |
+| 要求定義 | [02_user_stories.md](deliverables/demand_definition/02_user_stories.md) | `deliverables/demand_definition/user_stories/` | 1User Story=1ファイル(27件、2026-07-13 US-027追加) |
+| 要件定義 | [01_use_cases.md](deliverables/requirements/01_use_cases.md) | `deliverables/requirements/use_cases/` | 1ユースケース=1ファイル(10件、2026-07-13 UC-010追加) |
+| 要件定義 | [03_function_list.md](deliverables/requirements/03_function_list.md) | `deliverables/requirements/function_list/` | 1機能=1ファイル(37件、2026-07-13 F-037追加) |
+| 外部設計 | [02_api_spec.md](deliverables/external_design/02_api_spec.md) | `deliverables/external_design/api_spec/` | 1エンドポイント=1ファイル(51件、2026-07-13 パスワードリセット2件・メール確認2件を追加) |
 
 - 上記以外のドキュメント(概念ER図・画面一覧・画面設計・通知設計・内部設計各種等)は、項目数がまだ少なく肥大化していないため、分離を行っていない。今後項目数が増え見づらくなった場合は、同様の方針で分離を検討する。
 - 詳細ファイルはいずれも、概要ファイルへの「戻る」リンクと、元になったUser Story/機能等のIDを内部に保持しており、概要ファイル単体・詳細ファイル単体のどちらからでもトレーサビリティを追える。
@@ -234,3 +235,34 @@ flowchart LR
 - リセットトークンは、JWTではなくDB保存のランダムな不透明トークン(`secrets.token_urlsafe`)とした。JWTはステートレスで個別失効の仕組みを持たず、1回限りの使い捨てトークンには不向きと判断したため(UC-009備考参照)。この設計判断は要求定義着手前にユーザーと協議して決定した
 - パスワードリセット要求(`POST /auth/password-reset/request`)は、入力されたメールアドレスの存在有無に関わらず常に同一の200レスポンスを返す設計とした。ユーザー列挙攻撃を防ぐための意図的なセキュリティ対策であり、この判断も要求定義着手前にユーザーと協議して決定した
 - フロントエンドはSPA内の`view`状態遷移(react-router不使用の既存方式)に合わせ、URLクエリパラメータ`?token=...`をアプリ起動時に読み取って`password-reset-confirm`ビューへ遷移させる方式とした(Stripe決済完了時の`?payment=success`処理と同じパターン)
+
+## 11. 新機能追加の例: ログイン・会員登録へのレート制限(NFR-022, 2026-07-13)
+
+`docs/README.md`§4「新機能開発フロー」の6件目の実例。一般的な業界標準との比較監査で、認証系エンドポイント(`/auth/login`, `/auth/register`)にブルートフォース攻撃・スパム登録対策のレート制限が存在しないギャップが識別された。ユーザー向けの画面・業務フローを持たない、純粋なセキュリティ強化(既存のNFR-009「決済完了時の権限チェック」・NFR-011「管理者権限チェック」と同種の非機能要件)であるため、US/UC/画面設計は起こさず、NFR追加+内部設計+実装の最小限のドキュメントフローとした。
+
+| フェーズ | 追加・更新したドキュメント |
+|---|---|
+| 要件定義 | `06_nonfunctional_requirements.md`(NFR-022を新規追加) |
+| 外部設計 | `api_spec/auth_register__post.md`・`auth_login__post.md`(429エラーレスポンスを追記) |
+| 内部設計 | `02_module_design.md`(新規モジュール`rate_limit.py`を追加)、`04_error_handling_design.md`(429エラー・ログ設計を追記) |
+| 実装 | `backend/app/rate_limit.py`(新規)、`routers/users.py`(登録・ログインエンドポイントに適用)、`tests/conftest.py`(テスト間でレート制限カウンタをリセットする処理を追加) |
+
+- レート制限はプロセス内メモリの固定ウィンドウカウンタで実装し、外部ストア(Redis等)には依存しない設計とした。本プロジェクトの規模(個人学習用、単一プロセス運用を想定)では許容範囲と判断したが、複数プロセス/インスタンス構成では制限値が実質的に緩くなる制約がある(NFR-022参照)。この設計判断はユーザーへの事前確認を行わず、本機能を担当したエンジニアの判断で決定した
+- しきい値(ログイン: 15分に10回、登録: 1時間に5回)は一般的なブルートフォース対策の目安を参考にした値であり、業務要件から導出したものではない。運用実績に応じて調整の余地がある
+- 自動テスト(`test_rate_limit.py`)がログイン・登録のfixture(`auth_headers`等)を多用する既存テストと干渉しないよう、`conftest.py`の`_reset_db`(autouse)にレート制限カウンタのリセットを追加し、DBリセットと同じタイミングで初期化する設計とした
+
+## 12. 新機能追加の例: メールアドレスの本人確認(メール認証)機能(F-037, 2026-07-13)
+
+`docs/README.md`§4「新機能開発フロー」の7件目の実例。一般的な業界標準との比較監査で、会員登録時に入力されたメールアドレスの実在性を確認する手段がなく、他人のメールアドレスの誤登録・悪用を防げないギャップが識別された。パスワードリセット(UC-009)と同様の分岐(確認用トークンの有効/無効・期限切れ)を持つためユースケース化した。
+
+| フェーズ | 追加・更新したドキュメント |
+|---|---|
+| 要求定義 | `business_flow/02_membership.md`(メールアドレスの本人確認フローを追加)、`user_stories/US-027.md`(新規) |
+| 要件定義 | `use_cases/UC-010.md`(新規)、`function_list/F-037.md`(新規)、`04_conceptual_er.md`(CUSTOMERの属性に関する補足)、`05_screen_list.md`(S-007の説明更新) |
+| 外部設計 | `api_spec/auth_verify_email_resend__post.md`・`auth_verify_email_confirm__post.md`(新規)、`02_api_spec.md`(一覧に追加)、`api_spec/auth_register__post.md`(確認メール送信の副作用・`is_verified`フィールドを追記)、`01_screen_design.md`(S-007に未確認バッジ・再送ボタンを追記)、`04_notification_design.md`(N-006を新規追加) |
+| 内部設計 | `01_table_definition.md`(usersテーブルに`is_verified`/`email_verification_token`/`email_verification_token_expires_at`を追加)、`02_module_design.md`(エンドポイント対応表・email_utilsの役割を更新)、`03_sequence_diagram.md`(UC-010のシーケンス図を新規追加) |
+| 実装 | `backend/app/models.py`, `schemas.py`, `routers/users.py`, `main.py`, `email_utils.py`、`frontend/src/api/auth.js`, `pages/ProfileView.jsx`, `pages/MainView.jsx` |
+
+- メールアドレスが未確認(`is_verified=false`)であっても、ログイン・購入等の既存機能を一切制限しない非ブロッキング設計とした。プロフィール画面にバッジと再送ボタンを表示するのみに留める。この設計判断(ブロッキングにしない)は、本機能を担当したエンジニアの判断によるものであり、業務エキスパートへの正式な事前確認は行っていない。将来的にブロッキングが必要になった場合は業務エキスパートと協議のうえ関連ドキュメントを更新する
+- 確認用トークンの有効期限は7日間とし、パスワードリセット(24時間)より長く設定した。パスワードリセットと異なりセキュリティ上の緊急性が低く、顧客がメールにすぐ気づかない可能性を考慮したため
+- 確認リンクのクリックはフォーム入力を要さず、トークンのみで完結するため、パスワードリセットのような専用の確認画面(S-008/S-009に相当するもの)は起こさなかった。フロントエンドはStripe決済完了時の`?payment=success`処理と同じパターンで、アプリ起動時にクエリパラメータ`?verify_token=...`を検知して自動的に確認APIを呼び出し、結果を既存のトースト通知で表示する設計とした

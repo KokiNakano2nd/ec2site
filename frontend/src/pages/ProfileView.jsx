@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createAddress, deleteAddress, fetchAddresses, setDefaultAddress } from "../api/addresses";
-import { deleteAccount } from "../api/auth";
+import { deleteAccount, resendVerificationEmail } from "../api/auth";
 import { useAuth } from "../AuthContext";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
@@ -16,6 +16,19 @@ export function ProfileView({ showToast, onAccountDeleted }) {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  async function handleResendVerification() {
+    setResending(true);
+    try {
+      await resendVerificationEmail(token);
+      if (showToast) showToast("確認メールを再送しました");
+    } catch (err) {
+      if (showToast) showToast(err.message);
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     if (token) fetchAddresses(token).then(setAddresses).catch(() => {});
@@ -97,6 +110,16 @@ export function ProfileView({ showToast, onAccountDeleted }) {
             <p style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{user?.is_admin ? "管理者" : "一般ユーザー"}</p>
           </div>
         </div>
+        {user && !user.is_verified && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,193,7,0.15)", color: "#ffc107", border: "1px solid rgba(255,193,7,0.3)", borderRadius: 6, padding: "4px 10px" }}>
+              メールアドレスが未確認です
+            </span>
+            <button className="btn-surface" onClick={handleResendVerification} disabled={resending} style={{ padding: "6px 12px", fontSize: 12 }}>
+              {resending ? "送信中..." : "確認メールを再送する"}
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>

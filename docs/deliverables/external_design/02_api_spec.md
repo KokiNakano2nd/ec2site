@@ -27,6 +27,8 @@
 | 会員管理業務 | /users | DELETE | `/users/me` | 退会する(論理削除+個人情報の匿名化) | [users_me__delete.md](api_spec/users_me__delete.md) |
 | 会員管理業務 | /auth | POST | `/auth/password-reset/request` | パスワードリセットを要求する | [auth_password_reset_request__post.md](api_spec/auth_password_reset_request__post.md) |
 | 会員管理業務 | /auth | POST | `/auth/password-reset/confirm` | パスワードを再設定する | [auth_password_reset_confirm__post.md](api_spec/auth_password_reset_confirm__post.md) |
+| 会員管理業務 | /auth | POST | `/auth/verify-email/resend` | 確認メールを再送する | [auth_verify_email_resend__post.md](api_spec/auth_verify_email_resend__post.md) |
+| 会員管理業務 | /auth | POST | `/auth/verify-email/confirm` | メールアドレスを確認する | [auth_verify_email_confirm__post.md](api_spec/auth_verify_email_confirm__post.md) |
 | お気に入り管理業務 | /favorites | GET | `/favorites` | お気に入り一覧を取得する | [favorites__get.md](api_spec/favorites__get.md) |
 | お気に入り管理業務 | /favorites | POST | `/favorites/{product_id}` | お気に入りに登録する | [favorites_product_id__post.md](api_spec/favorites_product_id__post.md) |
 | お気に入り管理業務 | /favorites | DELETE | `/favorites/{product_id}` | お気に入りを解除する | [favorites_product_id__delete.md](api_spec/favorites_product_id__delete.md) |

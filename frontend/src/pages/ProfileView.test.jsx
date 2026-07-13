@@ -14,8 +14,10 @@ vi.mock("../api/addresses", () => ({
 }));
 
 const deleteAccountMock = vi.fn();
+const resendVerificationEmailMock = vi.fn();
 vi.mock("../api/auth", () => ({
   deleteAccount: (...args) => deleteAccountMock(...args),
+  resendVerificationEmail: (...args) => resendVerificationEmailMock(...args),
 }));
 
 const useAuthMock = vi.fn();
@@ -34,12 +36,13 @@ describe("ProfileView", () => {
   const logout = vi.fn();
 
   beforeEach(() => {
-    useAuthMock.mockReset().mockReturnValue({ user: { email: "user@example.com", is_admin: false }, token: "test-token", logout });
+    useAuthMock.mockReset().mockReturnValue({ user: { email: "user@example.com", is_admin: false, is_verified: true }, token: "test-token", logout });
     fetchAddressesMock.mockReset().mockResolvedValue([address]);
     createAddressMock.mockReset();
     deleteAddressMock.mockReset();
     setDefaultAddressMock.mockReset();
     deleteAccountMock.mockReset();
+    resendVerificationEmailMock.mockReset();
     logout.mockReset();
   });
 
@@ -86,5 +89,27 @@ describe("ProfileView", () => {
     await waitFor(() => expect(deleteAccountMock).toHaveBeenCalledWith("test-token", "mypassword"));
     expect(logout).toHaveBeenCalled();
     expect(onAccountDeleted).toHaveBeenCalled();
+  });
+
+  it("does not show the unverified badge when the email is verified", async () => {
+    render(<ProfileView showToast={vi.fn()} onAccountDeleted={vi.fn()} />);
+    await screen.findByText("山田太郎");
+    expect(screen.queryByText("メールアドレスが未確認です")).not.toBeInTheDocument();
+  });
+
+  it("shows the unverified badge and resends the verification email", async () => {
+    useAuthMock.mockReturnValue({ user: { email: "user@example.com", is_admin: false, is_verified: false }, token: "test-token", logout });
+    resendVerificationEmailMock.mockResolvedValue();
+    const showToast = vi.fn();
+    const user = userEvent.setup();
+    render(<ProfileView showToast={showToast} onAccountDeleted={vi.fn()} />);
+
+    await screen.findByText("山田太郎");
+    expect(screen.getByText("メールアドレスが未確認です")).toBeInTheDocument();
+
+    await user.click(screen.getByText("確認メールを再送する"));
+
+    expect(resendVerificationEmailMock).toHaveBeenCalledWith("test-token");
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith("確認メールを再送しました"));
   });
 });

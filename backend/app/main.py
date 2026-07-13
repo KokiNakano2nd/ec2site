@@ -12,6 +12,7 @@ from .email_utils import (  # noqa: F401 -- re-exported for routers/tests (app.m
     send_password_reset_email,
     send_return_rejected_email,
     send_status_notification,
+    send_verification_email,
 )
 from .logging_config import get_logger
 from .routers import (

@@ -59,6 +59,28 @@ export async function confirmPasswordReset(token, newPassword) {
   }
 }
 
+export async function resendVerificationEmail(token) {
+  const res = await fetch(`${API_URL}/auth/verify-email/resend`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("確認メールの再送に失敗しました");
+  }
+}
+
+export async function confirmEmailVerification(token) {
+  const res = await fetch(`${API_URL}/auth/verify-email/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "メールアドレスの確認に失敗しました");
+  }
+}
+
 export async function deleteAccount(token, password) {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "DELETE",
