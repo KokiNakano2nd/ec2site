@@ -16,9 +16,7 @@ def test_admin_product_crud(client, admin_headers):
     assert create_res.status_code == 201
     product = create_res.json()
 
-    update_res = client.patch(
-        f"/admin/products/{product['id']}", json={"price": 2000}, headers=admin_headers
-    )
+    update_res = client.patch(f"/admin/products/{product['id']}", json={"price": 2000}, headers=admin_headers)
     assert update_res.status_code == 200
     assert update_res.json()["price"] == 2000
 
@@ -77,9 +75,7 @@ def test_admin_coupon_crud(client, admin_headers):
     assert create_res.status_code == 201
     coupon = create_res.json()
 
-    update_res = client.patch(
-        f"/admin/coupons/{coupon['id']}", json={"is_active": False}, headers=admin_headers
-    )
+    update_res = client.patch(f"/admin/coupons/{coupon['id']}", json={"is_active": False}, headers=admin_headers)
     assert update_res.status_code == 200
     assert update_res.json()["is_active"] is False
 
@@ -187,9 +183,7 @@ def test_admin_update_order_status_and_list(client, auth_headers, admin_headers)
     client.post("/cart", json={"product_id": product["id"], "quantity": 1}, headers=auth_headers)
     order = client.post("/orders", headers=auth_headers).json()
 
-    res = client.patch(
-        f"/admin/orders/{order['id']}/status", json={"status": "processing"}, headers=admin_headers
-    )
+    res = client.patch(f"/admin/orders/{order['id']}/status", json={"status": "processing"}, headers=admin_headers)
     assert res.status_code == 200
     assert res.json()["status"] == "processing"
 

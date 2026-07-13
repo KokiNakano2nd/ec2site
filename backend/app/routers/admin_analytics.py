@@ -72,10 +72,7 @@ def admin_analytics_top_products(
         .limit(5)
         .all()
     )
-    return [
-        {"name": r.name, "total_qty": int(r.total_qty), "total_revenue": float(r.total_revenue)}
-        for r in rows
-    ]
+    return [{"name": r.name, "total_qty": int(r.total_qty), "total_revenue": float(r.total_revenue)} for r in rows]
 
 
 @router.get("/admin/analytics/category-sales")

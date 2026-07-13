@@ -19,7 +19,9 @@ class Product(Base):
     low_stock_threshold = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    images = relationship("ProductImage", back_populates="product", order_by="ProductImage.display_order", cascade="all, delete-orphan")
+    images = relationship(
+        "ProductImage", back_populates="product", order_by="ProductImage.display_order", cascade="all, delete-orphan"
+    )
 
 
 class ProductImage(Base):

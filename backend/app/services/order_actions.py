@@ -66,7 +66,7 @@ def reverse_order(db, order) -> None:
             stripe_client.stripe_lib.Refund.create(payment_intent=order.stripe_payment_intent_id)
         except Exception as e:
             logger.error("Stripe返金に失敗しました(order_id=%s): %s", order.id, e)
-            raise HTTPException(status_code=500, detail="返金処理に失敗しました")
+            raise HTTPException(status_code=500, detail="返金処理に失敗しました") from e
 
     for item in order.items:
         item.product.stock += item.quantity

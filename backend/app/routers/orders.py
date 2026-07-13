@@ -76,11 +76,7 @@ def get_order(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    order = (
-        db.query(models.Order)
-        .filter(models.Order.id == order_id, models.Order.user_id == current_user.id)
-        .first()
-    )
+    order = db.query(models.Order).filter(models.Order.id == order_id, models.Order.user_id == current_user.id).first()
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     return order
@@ -92,11 +88,7 @@ def cancel_order(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    order = (
-        db.query(models.Order)
-        .filter(models.Order.id == order_id, models.Order.user_id == current_user.id)
-        .first()
-    )
+    order = db.query(models.Order).filter(models.Order.id == order_id, models.Order.user_id == current_user.id).first()
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     if order.status not in ("pending", "processing"):
@@ -121,11 +113,7 @@ def request_order_return(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    order = (
-        db.query(models.Order)
-        .filter(models.Order.id == order_id, models.Order.user_id == current_user.id)
-        .first()
-    )
+    order = db.query(models.Order).filter(models.Order.id == order_id, models.Order.user_id == current_user.id).first()
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     if order.status != "shipped":

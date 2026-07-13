@@ -18,12 +18,13 @@ def send_email(to: str, subject: str, body_html: str) -> None:
     if not SMTP_HOST:
         print(f"[EMAIL] To: {to}")
         print(f"[EMAIL] Subject: {subject}")
-        print(f"[EMAIL] ---")
+        print("[EMAIL] ---")
         plain = body_html.replace("<br>", "\n").replace("</p>", "\n").replace("</li>", "\n")
         import re
+
         plain = re.sub(r"<[^>]+>", "", plain).strip()
         print(plain)
-        print(f"[EMAIL] ---")
+        print("[EMAIL] ---")
         return
     try:
         msg = MIMEMultipart("alternative")
@@ -54,8 +55,7 @@ def _render_email(title: str, body_inner: str) -> str:
 def send_order_confirmation(user_email: str, order_id: int, total_price: float, items: list[dict]) -> None:
     subject = f"【TechStore】ご注文確認 #{order_id}"
     items_html = "".join(
-        f"<li>{item['name']} × {item['quantity']}個 — ¥{int(item['price'] * item['quantity']):,}</li>"
-        for item in items
+        f"<li>{item['name']} × {item['quantity']}個 — ¥{int(item['price'] * item['quantity']):,}</li>" for item in items
     )
     body_inner = f"""  <p>以下の内容でご注文を承りました。</p>
   <table style="width:100%;border-collapse:collapse;margin:16px 0">

@@ -1,5 +1,4 @@
 import random
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -11,12 +10,10 @@ router = APIRouter()
 
 
 @router.get("/products", response_model=list[schemas.ProductOut])
-def list_products(q: Optional[str] = None, db: Session = Depends(get_db)):
+def list_products(q: str | None = None, db: Session = Depends(get_db)):
     query = db.query(models.Product)
     if q:
-        query = query.filter(
-            models.Product.name.ilike(f"%{q}%") | models.Product.description.ilike(f"%{q}%")
-        )
+        query = query.filter(models.Product.name.ilike(f"%{q}%") | models.Product.description.ilike(f"%{q}%"))
     return query.all()
 
 

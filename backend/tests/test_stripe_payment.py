@@ -42,9 +42,7 @@ def test_checkout_requires_nonempty_cart(client, auth_headers, stripe_enabled):
 
 def test_checkout_creates_session_url(client, auth_headers, stripe_enabled, monkeypatch):
     _add_to_cart(client, auth_headers)
-    monkeypatch.setattr(
-        "app.stripe_client.stripe_lib.checkout.Session.create", lambda **kwargs: FakeCheckoutSession()
-    )
+    monkeypatch.setattr("app.stripe_client.stripe_lib.checkout.Session.create", lambda **kwargs: FakeCheckoutSession())
 
     res = client.post("/payment/checkout", headers=auth_headers)
     assert res.status_code == 200
@@ -73,9 +71,7 @@ def test_checkout_applies_coupon_discount_to_session_amount(
     assert res_no_coupon.status_code == 200
     amount_without_coupon = captured["line_items"][0]["price_data"]["unit_amount"]
 
-    res_with_coupon = client.post(
-        "/payment/checkout", json={"coupon_code": "CHECKOUT10"}, headers=auth_headers
-    )
+    res_with_coupon = client.post("/payment/checkout", json={"coupon_code": "CHECKOUT10"}, headers=auth_headers)
     assert res_with_coupon.status_code == 200
     amount_with_coupon = captured["line_items"][0]["price_data"]["unit_amount"]
 

@@ -45,14 +45,16 @@ def create_checkout_session(
     try:
         session = stripe_client.stripe_lib.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "jpy",
-                    "product_data": {"name": "TechStore ご注文"},
-                    "unit_amount": total_with_tax,
-                },
-                "quantity": 1,
-            }],
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "jpy",
+                        "product_data": {"name": "TechStore ご注文"},
+                        "unit_amount": total_with_tax,
+                    },
+                    "quantity": 1,
+                }
+            ],
             mode="payment",
             success_url=f"{config.FRONTEND_URL}/?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{config.FRONTEND_URL}/",
@@ -65,7 +67,7 @@ def create_checkout_session(
         return {"session_url": session.url}
     except Exception as e:
         logger.error("Stripe checkout session作成に失敗しました(user_id=%s): %s", current_user.id, e)
-        raise HTTPException(status_code=500, detail=f"Stripe エラー: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Stripe エラー: {str(e)}") from e
 
 
 @router.post("/payment/complete", response_model=schemas.OrderOut)
@@ -81,14 +83,16 @@ def complete_payment(
         session = stripe_client.stripe_lib.checkout.Session.retrieve(session_id)
     except Exception as e:
         logger.error("Stripe session取得に失敗しました(session_id=%s): %s", session_id, e)
-        raise HTTPException(status_code=400, detail=f"セッション取得失敗: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"セッション取得失敗: {str(e)}") from e
 
     if session.payment_status != "paid":
         raise HTTPException(status_code=400, detail="支払いが完了していません")
     if str(session.metadata.get("user_id")) != str(current_user.id):
         logger.warning(
             "他ユーザーの決済セッションへのアクセス試行(session_id=%s, session_user_id=%s, request_user_id=%s)",
-            session_id, session.metadata.get("user_id"), current_user.id,
+            session_id,
+            session.metadata.get("user_id"),
+            current_user.id,
         )
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 

@@ -86,11 +86,7 @@ def delete_account(
 
 @router.post("/auth/password-reset/request", status_code=200)
 def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Depends(get_db)):
-    user = (
-        db.query(models.User)
-        .filter(models.User.email == body.email, models.User.is_active.is_(True))
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.email == body.email, models.User.is_active.is_(True)).first()
     if user is not None:
         user.password_reset_token = secrets.token_urlsafe(32)
         user.password_reset_token_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_EXPIRY
@@ -104,11 +100,7 @@ def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Dep
 
 @router.post("/auth/password-reset/confirm", status_code=200)
 def confirm_password_reset(body: schemas.PasswordResetConfirm, db: Session = Depends(get_db)):
-    user = (
-        db.query(models.User)
-        .filter(models.User.password_reset_token == body.token)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.password_reset_token == body.token).first()
     if (
         user is None
         or user.password_reset_token_expires_at is None
@@ -141,11 +133,7 @@ def resend_verification_email(
 
 @router.post("/auth/verify-email/confirm", status_code=200)
 def confirm_email_verification(body: schemas.EmailVerificationConfirm, db: Session = Depends(get_db)):
-    user = (
-        db.query(models.User)
-        .filter(models.User.email_verification_token == body.token)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.email_verification_token == body.token).first()
     if (
         user is None
         or user.email_verification_token_expires_at is None

@@ -156,8 +156,8 @@ def test_admin_resolve_return_requires_admin(client, auth_headers):
 
 
 def test_cancel_with_stripe_payment_intent_calls_refund(client, auth_headers, mock_stripe_refund_success):
-    from app.database import SessionLocal
     from app import models
+    from app.database import SessionLocal
 
     product_id, stock_before = _first_product_id(client, auth_headers)
     order = create_order_for_user(client, auth_headers, product_id, quantity=1)
@@ -179,8 +179,8 @@ def test_cancel_with_stripe_payment_intent_calls_refund(client, auth_headers, mo
 def test_cancel_with_stripe_refund_failure_returns_500_and_keeps_order_unchanged(
     client, auth_headers, mock_stripe_refund_failure
 ):
-    from app.database import SessionLocal
     from app import models
+    from app.database import SessionLocal
 
     product_id, stock_before = _first_product_id(client, auth_headers)
     order = create_order_for_user(client, auth_headers, product_id, quantity=1)

@@ -3,8 +3,21 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
@@ -14,13 +27,21 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: uv sync --frozen
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Dependency vulnerability scan (pip-audit)
+        run: uv run pip-audit --ignore-vuln PYSEC-2026-1325 # ecdsa: unfixed pure-Python timing-attack CVE, no fix version exists upstream
       - name: Run pytest (with coverage gate)
-        run: pytest
+        run: uv run pytest
 
   frontend:
     runs-on: ubuntu-latest
@@ -36,6 +57,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Lint (ESLint)
+        run: npm run lint
       - name: Run Vitest (with coverage gate)
         run: npm run test:coverage
       - name: Build

@@ -56,11 +56,7 @@ def update_cart_item(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_item = (
-        db.query(models.Cart)
-        .filter(models.Cart.id == cart_id, models.Cart.user_id == current_user.id)
-        .first()
-    )
+    cart_item = db.query(models.Cart).filter(models.Cart.id == cart_id, models.Cart.user_id == current_user.id).first()
     if cart_item is None:
         raise HTTPException(status_code=404, detail="カート内に該当の商品が見つかりません")
 
@@ -81,11 +77,7 @@ def delete_cart_item(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_item = (
-        db.query(models.Cart)
-        .filter(models.Cart.id == cart_id, models.Cart.user_id == current_user.id)
-        .first()
-    )
+    cart_item = db.query(models.Cart).filter(models.Cart.id == cart_id, models.Cart.user_id == current_user.id).first()
     if cart_item is None:
         raise HTTPException(status_code=404, detail="カート内に該当の商品が見つかりません")
 

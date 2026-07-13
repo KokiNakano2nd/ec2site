@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 
 
 def _get_verification_token(email):
-    from app.database import SessionLocal
     from app import models
+    from app.database import SessionLocal
 
     db = SessionLocal()
     try:
@@ -22,9 +22,7 @@ def test_register_sends_verification_email_and_creates_unverified_user(client, m
 
     monkeypatch.setattr("app.email_utils.send_verification_email", fake_send)
 
-    res = client.post(
-        "/auth/register", json={"email": "verify-me@example.com", "password": "password123"}
-    )
+    res = client.post("/auth/register", json={"email": "verify-me@example.com", "password": "password123"})
     assert res.status_code == 201
     assert res.json()["is_verified"] is False
 
@@ -44,9 +42,7 @@ def test_confirm_verification_with_valid_token_marks_user_verified(client, monke
     res = client.post("/auth/verify-email/confirm", json={"token": token})
     assert res.status_code == 200
 
-    res = client.post(
-        "/auth/login", json={"email": "verify-me@example.com", "password": "password123"}
-    )
+    res = client.post("/auth/login", json={"email": "verify-me@example.com", "password": "password123"})
     me = client.get("/auth/me", headers={"Authorization": f"Bearer {res.json()['access_token']}"})
     assert me.json()["is_verified"] is True
 
@@ -69,8 +65,8 @@ def test_confirm_verification_with_invalid_token_returns_400(client):
 
 
 def test_confirm_verification_with_expired_token_returns_400(client, monkeypatch):
-    from app.database import SessionLocal
     from app import models
+    from app.database import SessionLocal
 
     monkeypatch.setattr("app.email_utils.send_verification_email", lambda email, link: None)
     client.post("/auth/register", json={"email": "verify-me@example.com", "password": "password123"})

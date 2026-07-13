@@ -19,9 +19,7 @@ def test_cart_add_update_delete_flow(client, auth_headers):
     bad_update = client.patch(f"/cart/{cart_item['id']}", json={"quantity": 0}, headers=auth_headers)
     assert bad_update.status_code == 400
 
-    over_stock = client.patch(
-        f"/cart/{cart_item['id']}", json={"quantity": product["stock"] + 1}, headers=auth_headers
-    )
+    over_stock = client.patch(f"/cart/{cart_item['id']}", json={"quantity": product["stock"] + 1}, headers=auth_headers)
     assert over_stock.status_code == 400
 
     delete_res = client.delete(f"/cart/{cart_item['id']}", headers=auth_headers)

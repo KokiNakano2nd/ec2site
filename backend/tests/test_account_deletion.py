@@ -41,8 +41,8 @@ def test_delete_account_requires_auth(client):
 
 
 def test_delete_account_removes_addresses_and_favorites(client, auth_headers):
-    from app.database import SessionLocal
     from app import models
+    from app.database import SessionLocal
 
     client.post("/addresses", json=ADDRESS_PAYLOAD, headers=auth_headers)
     product = _first_product(client, auth_headers)

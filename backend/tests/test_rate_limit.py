@@ -9,9 +9,7 @@ def test_login_rate_limit_returns_429_after_threshold(client):
     client.post("/auth/register", json={"email": "ratelimit@example.com", "password": TEST_PASSWORD})
 
     for _ in range(max_requests):
-        res = client.post(
-            "/auth/login", json={"email": "ratelimit@example.com", "password": "wrong-password"}
-        )
+        res = client.post("/auth/login", json={"email": "ratelimit@example.com", "password": "wrong-password"})
         assert res.status_code == 401
 
     res = client.post("/auth/login", json={"email": "ratelimit@example.com", "password": "wrong-password"})
