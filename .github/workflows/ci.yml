@@ -3,14 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
 
 permissions:
   contents: read
@@ -38,6 +32,10 @@ jobs:
         run: |
           uv run ruff check .
           uv run ruff format --check .
+      - name: Check OpenAPI document is up to date
+        run: uv run python scripts/export_openapi.py --check
+      - name: Check documentation integrity
+        run: uv run python scripts/check_docs.py
       - name: Dependency vulnerability scan (pip-audit)
         run: uv run pip-audit --ignore-vuln PYSEC-2026-1325 # ecdsa: unfixed pure-Python timing-attack CVE, no fix version exists upstream
       - name: Run pytest (with coverage gate)

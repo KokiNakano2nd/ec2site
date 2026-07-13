@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy import func, select
 
 from . import auth, models, stripe_client  # noqa: F401 -- import triggers Stripe API key setup
@@ -24,7 +25,11 @@ logger = get_logger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="EC Site API")
+app = FastAPI(
+    title="EC Site API",
+    version="0.0.1",
+    description="TechStore ECサイトのHTTP API。機械可読な正本はこのOpenAPI文書とする。",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +51,48 @@ app.include_router(admin_analytics.router)
 app.include_router(orders.router)
 app.include_router(admin_orders.router)
 app.include_router(payment.router)
+
+
+def custom_openapi():
+    """実際の共通認証エラーを含むOpenAPIスキーマを生成する。"""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    schema.setdefault("components", {}).setdefault("schemas", {})["HTTPError"] = {
+        "type": "object",
+        "required": ["detail"],
+        "properties": {"detail": {"type": "string"}},
+    }
+
+    def error_response(description: str) -> dict:
+        return {
+            "description": description,
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPError"}}},
+        }
+
+    for path, path_item in schema["paths"].items():
+        for method, operation in path_item.items():
+            if method not in {"get", "post", "put", "patch", "delete", "options", "head", "trace"}:
+                continue
+            responses = operation.setdefault("responses", {})
+            if operation.get("security"):
+                responses.setdefault("401", error_response("Bearerトークンがない、無効、期限切れ、または退会済み"))
+            if path.startswith("/admin/"):
+                responses.setdefault("403", error_response("管理者権限がない"))
+            if path in {"/auth/login", "/auth/register"}:
+                responses.setdefault("429", error_response("レート制限超過"))
+
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 
 @app.on_event("startup")
