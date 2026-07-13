@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
 
@@ -9,150 +9,150 @@ from .database import Base
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    price = Column(Float, nullable=False)
-    stock = Column(Integer, nullable=False, default=0)
-    image_url = Column(String, nullable=True)
-    category = Column(String, nullable=True)
-    low_stock_threshold = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str]
+    description: Mapped[str | None] = mapped_column(default=None)
+    price: Mapped[float]
+    stock: Mapped[int] = mapped_column(default=0)
+    image_url: Mapped[str | None] = mapped_column(default=None)
+    category: Mapped[str | None] = mapped_column(default=None)
+    low_stock_threshold: Mapped[int | None] = mapped_column(default=None)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    images = relationship(
-        "ProductImage", back_populates="product", order_by="ProductImage.display_order", cascade="all, delete-orphan"
+    images: Mapped[list["ProductImage"]] = relationship(
+        back_populates="product", order_by="ProductImage.display_order", cascade="all, delete-orphan"
     )
 
 
 class ProductImage(Base):
     __tablename__ = "product_images"
 
-    id = Column(Integer, primary_key=True, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    image_url = Column(String, nullable=False)
-    display_order = Column(Integer, nullable=False, default=0)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    image_url: Mapped[str]
+    display_order: Mapped[int] = mapped_column(default=0)
 
-    product = relationship("Product", back_populates="images")
+    product: Mapped["Product"] = relationship(back_populates="images")
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_admin = Column(Boolean, nullable=False, default=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    deleted_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    password_reset_token = Column(String, nullable=True, index=True)
-    password_reset_token_expires_at = Column(DateTime, nullable=True)
-    is_verified = Column(Boolean, nullable=False, default=False)
-    email_verification_token = Column(String, nullable=True, index=True)
-    email_verification_token_expires_at = Column(DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    hashed_password: Mapped[str]
+    is_admin: Mapped[bool] = mapped_column(default=False)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(default=None)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    password_reset_token: Mapped[str | None] = mapped_column(default=None, index=True)
+    password_reset_token_expires_at: Mapped[datetime | None] = mapped_column(default=None)
+    is_verified: Mapped[bool] = mapped_column(default=False)
+    email_verification_token: Mapped[str | None] = mapped_column(default=None, index=True)
+    email_verification_token_expires_at: Mapped[datetime | None] = mapped_column(default=None)
 
-    carts = relationship("Cart", back_populates="user")
-    orders = relationship("Order", back_populates="user")
-    favorites = relationship("Favorite", back_populates="user")
-    reviews = relationship("Review", back_populates="user")
-    addresses = relationship("Address", back_populates="user", cascade="all, delete-orphan")
+    carts: Mapped[list["Cart"]] = relationship(back_populates="user")
+    orders: Mapped[list["Order"]] = relationship(back_populates="user")
+    favorites: Mapped[list["Favorite"]] = relationship(back_populates="user")
+    reviews: Mapped[list["Review"]] = relationship(back_populates="user")
+    addresses: Mapped[list["Address"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Address(Base):
     __tablename__ = "addresses"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    name = Column(String, nullable=False)
-    postal_code = Column(String, nullable=False)
-    prefecture = Column(String, nullable=False)
-    city = Column(String, nullable=False)
-    address_line1 = Column(String, nullable=False)
-    address_line2 = Column(String, nullable=True)
-    phone = Column(String, nullable=True)
-    is_default = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str]
+    postal_code: Mapped[str]
+    prefecture: Mapped[str]
+    city: Mapped[str]
+    address_line1: Mapped[str]
+    address_line2: Mapped[str | None] = mapped_column(default=None)
+    phone: Mapped[str | None] = mapped_column(default=None)
+    is_default: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    user = relationship("User", back_populates="addresses")
+    user: Mapped["User"] = relationship(back_populates="addresses")
 
 
 class Cart(Base):
     __tablename__ = "carts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Integer, nullable=False, default=1)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    quantity: Mapped[int] = mapped_column(default=1)
 
-    user = relationship("User", back_populates="carts")
-    product = relationship("Product")
+    user: Mapped["User"] = relationship(back_populates="carts")
+    product: Mapped["Product"] = relationship()
 
 
 class Coupon(Base):
     __tablename__ = "coupons"
 
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, unique=True, nullable=False, index=True)
-    discount_type = Column(String, nullable=False)  # "percentage" or "fixed"
-    discount_value = Column(Float, nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    max_uses = Column(Integer, nullable=True)
-    used_count = Column(Integer, nullable=False, default=0)
-    low_remaining_uses_threshold = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    code: Mapped[str] = mapped_column(unique=True, index=True)
+    discount_type: Mapped[str]  # "percentage" or "fixed"
+    discount_value: Mapped[float]
+    is_active: Mapped[bool] = mapped_column(default=True)
+    max_uses: Mapped[int | None] = mapped_column(default=None)
+    used_count: Mapped[int] = mapped_column(default=0)
+    low_remaining_uses_threshold: Mapped[int | None] = mapped_column(default=None)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
 
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    total_price = Column(Float, nullable=False)
-    discount_amount = Column(Float, nullable=False, default=0)
-    coupon_code = Column(String, nullable=True)
-    status = Column(String, nullable=False, default="pending")
-    stripe_payment_intent_id = Column(String, nullable=True)
-    return_reason = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    total_price: Mapped[float]
+    discount_amount: Mapped[float] = mapped_column(default=0)
+    coupon_code: Mapped[str | None] = mapped_column(default=None)
+    status: Mapped[str] = mapped_column(default="pending")
+    stripe_payment_intent_id: Mapped[str | None] = mapped_column(default=None)
+    return_reason: Mapped[str | None] = mapped_column(default=None)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    user = relationship("User", back_populates="orders")
-    items = relationship("OrderItem", back_populates="order")
+    user: Mapped["User"] = relationship(back_populates="orders")
+    items: Mapped[list["OrderItem"]] = relationship(back_populates="order")
 
 
 class OrderItem(Base):
     __tablename__ = "order_items"
 
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    price = Column(Float, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    quantity: Mapped[int]
+    price: Mapped[float]
 
-    order = relationship("Order", back_populates="items")
-    product = relationship("Product")
+    order: Mapped["Order"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship()
 
 
 class Favorite(Base):
     __tablename__ = "favorites"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    user = relationship("User", back_populates="favorites")
-    product = relationship("Product")
+    user: Mapped["User"] = relationship(back_populates="favorites")
+    product: Mapped["Product"] = relationship()
 
 
 class Review(Base):
     __tablename__ = "reviews"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    rating = Column(Integer, nullable=False)
-    comment = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    rating: Mapped[int]
+    comment: Mapped[str | None] = mapped_column(default=None)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    user = relationship("User", back_populates="reviews")
-    product = relationship("Product")
+    user: Mapped["User"] = relationship(back_populates="reviews")
+    product: Mapped["Product"] = relationship()

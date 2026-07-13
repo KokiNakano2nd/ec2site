@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, config, models, schemas, stripe_client
@@ -25,18 +26,19 @@ def create_checkout_session(
     if not config.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=400, detail="Stripeが設定されていません")
 
-    cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
+    cart_items = db.execute(select(models.Cart).where(models.Cart.user_id == current_user.id)).scalars().all()
     if not cart_items:
         raise HTTPException(status_code=400, detail="カートが空です")
 
     subtotal = calculate_subtotal(cart_items)
     discount_amount = 0.0
     if order_in.coupon_code:
-        coupon = (
-            db.query(models.Coupon)
-            .filter(models.Coupon.code == order_in.coupon_code, models.Coupon.is_active == True)  # noqa: E712
-            .first()
-        )
+        coupon = db.execute(
+            select(models.Coupon).where(
+                models.Coupon.code == order_in.coupon_code,
+                models.Coupon.is_active == True,  # noqa: E712
+            )
+        ).scalar_one_or_none()
         discount_amount = calculate_discount(subtotal, coupon)
 
     _discounted_subtotal, _tax, total_price = calculate_total(subtotal, discount_amount)
@@ -96,7 +98,7 @@ def complete_payment(
         )
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 
-    cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
+    cart_items = db.execute(select(models.Cart).where(models.Cart.user_id == current_user.id)).scalars().all()
     if not cart_items:
         raise HTTPException(status_code=400, detail="カートが空です（既に注文済みかもしれません）")
 
@@ -105,11 +107,12 @@ def complete_payment(
     discount_amount = 0.0
     applied_coupon = None
     if coupon_code:
-        coupon = (
-            db.query(models.Coupon)
-            .filter(models.Coupon.code == coupon_code, models.Coupon.is_active == True)  # noqa: E712
-            .first()
-        )
+        coupon = db.execute(
+            select(models.Coupon).where(
+                models.Coupon.code == coupon_code,
+                models.Coupon.is_active == True,  # noqa: E712
+            )
+        ).scalar_one_or_none()
         if coupon:
             discount_amount = calculate_discount(subtotal, coupon)
             applied_coupon = coupon

@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import select
 
 from .. import email_utils, models, stripe_client
 from ..logging_config import get_logger
@@ -71,6 +72,6 @@ def reverse_order(db, order) -> None:
     for item in order.items:
         item.product.stock += item.quantity
     if order.coupon_code:
-        coupon = db.query(models.Coupon).filter(models.Coupon.code == order.coupon_code).first()
+        coupon = db.execute(select(models.Coupon).where(models.Coupon.code == order.coupon_code)).scalar_one_or_none()
         if coupon and coupon.used_count > 0:
             coupon.used_count -= 1

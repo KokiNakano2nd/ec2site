@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -8,7 +9,7 @@ router = APIRouter()
 
 
 def _clear_default_address(db: Session, user_id: int) -> None:
-    db.query(models.Address).filter(models.Address.user_id == user_id).update({"is_default": False})
+    db.execute(update(models.Address).where(models.Address.user_id == user_id).values(is_default=False))
 
 
 @router.get("/addresses", response_model=list[schemas.AddressOut])
@@ -17,9 +18,12 @@ def list_addresses(
     db: Session = Depends(get_db),
 ):
     return (
-        db.query(models.Address)
-        .filter(models.Address.user_id == current_user.id)
-        .order_by(models.Address.is_default.desc(), models.Address.created_at.desc())
+        db.execute(
+            select(models.Address)
+            .where(models.Address.user_id == current_user.id)
+            .order_by(models.Address.is_default.desc(), models.Address.created_at.desc())
+        )
+        .scalars()
         .all()
     )
 
@@ -46,11 +50,9 @@ def update_address(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    address = (
-        db.query(models.Address)
-        .filter(models.Address.id == address_id, models.Address.user_id == current_user.id)
-        .first()
-    )
+    address = db.execute(
+        select(models.Address).where(models.Address.id == address_id, models.Address.user_id == current_user.id)
+    ).scalar_one_or_none()
     if address is None:
         raise HTTPException(status_code=404, detail="住所が見つかりません")
     if address_in.is_default:
@@ -68,11 +70,9 @@ def delete_address(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    address = (
-        db.query(models.Address)
-        .filter(models.Address.id == address_id, models.Address.user_id == current_user.id)
-        .first()
-    )
+    address = db.execute(
+        select(models.Address).where(models.Address.id == address_id, models.Address.user_id == current_user.id)
+    ).scalar_one_or_none()
     if address is None:
         raise HTTPException(status_code=404, detail="住所が見つかりません")
     db.delete(address)
@@ -87,11 +87,9 @@ def set_default_address(
     db: Session = Depends(get_db),
 ):
     _clear_default_address(db, current_user.id)
-    address = (
-        db.query(models.Address)
-        .filter(models.Address.id == address_id, models.Address.user_id == current_user.id)
-        .first()
-    )
+    address = db.execute(
+        select(models.Address).where(models.Address.id == address_id, models.Address.user_id == current_user.id)
+    ).scalar_one_or_none()
     if address is None:
         raise HTTPException(status_code=404, detail="住所が見つかりません")
     address.is_default = True

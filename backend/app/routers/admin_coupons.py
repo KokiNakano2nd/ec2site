@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -13,12 +14,14 @@ def admin_list_low_remaining_uses_coupons(
     db: Session = Depends(get_db),
 ):
     return (
-        db.query(models.Coupon)
-        .filter(
-            models.Coupon.max_uses.isnot(None),
-            models.Coupon.low_remaining_uses_threshold.isnot(None),
-            (models.Coupon.max_uses - models.Coupon.used_count) <= models.Coupon.low_remaining_uses_threshold,
+        db.execute(
+            select(models.Coupon).where(
+                models.Coupon.max_uses.isnot(None),
+                models.Coupon.low_remaining_uses_threshold.isnot(None),
+                (models.Coupon.max_uses - models.Coupon.used_count) <= models.Coupon.low_remaining_uses_threshold,
+            )
         )
+        .scalars()
         .all()
     )
 
@@ -28,7 +31,7 @@ def admin_list_coupons(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    return db.query(models.Coupon).order_by(models.Coupon.created_at.desc()).all()
+    return db.execute(select(models.Coupon).order_by(models.Coupon.created_at.desc())).scalars().all()
 
 
 @router.post("/admin/coupons", response_model=schemas.CouponOut, status_code=201)
@@ -39,7 +42,7 @@ def admin_create_coupon(
 ):
     if coupon_in.discount_type not in ("percentage", "fixed"):
         raise HTTPException(status_code=400, detail="discount_typeは percentage または fixed を指定してください")
-    existing = db.query(models.Coupon).filter(models.Coupon.code == coupon_in.code).first()
+    existing = db.execute(select(models.Coupon).where(models.Coupon.code == coupon_in.code)).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=400, detail="このクーポンコードはすでに存在します")
     coupon = models.Coupon(**coupon_in.model_dump())
@@ -56,7 +59,7 @@ def admin_toggle_coupon(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    coupon = db.query(models.Coupon).filter(models.Coupon.id == coupon_id).first()
+    coupon = db.get(models.Coupon, coupon_id)
     if coupon is None:
         raise HTTPException(status_code=404, detail="クーポンが見つかりません")
     data = coupon_in.model_dump(exclude_unset=True) if coupon_in else {}
@@ -77,7 +80,7 @@ def admin_delete_coupon(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    coupon = db.query(models.Coupon).filter(models.Coupon.id == coupon_id).first()
+    coupon = db.get(models.Coupon, coupon_id)
     if coupon is None:
         raise HTTPException(status_code=404, detail="クーポンが見つかりません")
     db.delete(coupon)

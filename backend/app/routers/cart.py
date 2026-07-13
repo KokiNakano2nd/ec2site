@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -12,7 +13,7 @@ def list_cart_items(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    return db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
+    return db.execute(select(models.Cart).where(models.Cart.user_id == current_user.id)).scalars().all()
 
 
 @router.post("/cart", response_model=schemas.CartItemOut, status_code=201)
@@ -21,15 +22,13 @@ def add_cart_item(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    product = db.query(models.Product).filter(models.Product.id == item_in.product_id).first()
+    product = db.get(models.Product, item_in.product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
 
-    cart_item = (
-        db.query(models.Cart)
-        .filter(models.Cart.user_id == current_user.id, models.Cart.product_id == item_in.product_id)
-        .first()
-    )
+    cart_item = db.execute(
+        select(models.Cart).where(models.Cart.user_id == current_user.id, models.Cart.product_id == item_in.product_id)
+    ).scalar_one_or_none()
     new_quantity = (cart_item.quantity if cart_item else 0) + item_in.quantity
     if new_quantity > product.stock:
         raise HTTPException(status_code=400, detail="在庫数を超える数量は指定できません")
@@ -56,7 +55,9 @@ def update_cart_item(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_item = db.query(models.Cart).filter(models.Cart.id == cart_id, models.Cart.user_id == current_user.id).first()
+    cart_item = db.execute(
+        select(models.Cart).where(models.Cart.id == cart_id, models.Cart.user_id == current_user.id)
+    ).scalar_one_or_none()
     if cart_item is None:
         raise HTTPException(status_code=404, detail="カート内に該当の商品が見つかりません")
 
@@ -77,7 +78,9 @@ def delete_cart_item(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_item = db.query(models.Cart).filter(models.Cart.id == cart_id, models.Cart.user_id == current_user.id).first()
+    cart_item = db.execute(
+        select(models.Cart).where(models.Cart.id == cart_id, models.Cart.user_id == current_user.id)
+    ).scalar_one_or_none()
     if cart_item is None:
         raise HTTPException(status_code=404, detail="カート内に該当の商品が見つかりません")
 

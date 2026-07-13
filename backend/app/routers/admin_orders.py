@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, email_utils, models, schemas
@@ -18,7 +19,7 @@ def admin_resolve_return(
     if action_in.action not in ("approve", "reject"):
         raise HTTPException(status_code=400, detail="actionはapproveまたはrejectを指定してください")
 
-    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    order = db.get(models.Order, order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     if order.status != "return_requested":
@@ -50,7 +51,7 @@ def admin_update_order_status(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    order = db.get(models.Order, order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     order.status = status_in.status
@@ -69,7 +70,7 @@ def admin_list_orders(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    orders = db.query(models.Order).order_by(models.Order.created_at.desc()).all()
+    orders = db.execute(select(models.Order).order_by(models.Order.created_at.desc())).scalars().all()
     result = []
     for order in orders:
         order_out = schemas.OrderOut.model_validate(order)

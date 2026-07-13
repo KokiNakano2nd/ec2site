@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func, select
 
 from . import auth, models, stripe_client  # noqa: F401 -- import triggers Stripe API key setup
 from .database import Base, engine, get_db
@@ -50,7 +51,7 @@ app.include_router(payment.router)
 @app.on_event("startup")
 def seed_products():
     db = next(get_db())
-    if db.query(models.Product).count() == 0:
+    if db.execute(select(func.count(models.Product.id))).scalar() == 0:
         sample_products = [
             models.Product(
                 name="ワイヤレスイヤホン",
@@ -133,7 +134,7 @@ def seed_products():
 @app.on_event("startup")
 def seed_coupons():
     db = next(get_db())
-    if db.query(models.Coupon).count() == 0:
+    if db.execute(select(func.count(models.Coupon.id))).scalar() == 0:
         sample_coupons = [
             models.Coupon(code="WELCOME10", discount_type="percentage", discount_value=10, is_active=True),
             models.Coupon(code="SAVE500", discount_type="fixed", discount_value=500, is_active=True),
@@ -147,7 +148,7 @@ def seed_coupons():
 @app.on_event("startup")
 def seed_admin():
     db = next(get_db())
-    if db.query(models.User).filter(models.User.is_admin == True).first() is None:  # noqa: E712
+    if db.execute(select(models.User).where(models.User.is_admin == True)).scalar_one_or_none() is None:  # noqa: E712
         admin = models.User(
             email="admin@example.com",
             hashed_password=auth.hash_password("admin12345"),

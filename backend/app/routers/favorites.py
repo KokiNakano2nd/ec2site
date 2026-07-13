@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -12,7 +13,7 @@ def list_favorites(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    return db.query(models.Favorite).filter(models.Favorite.user_id == current_user.id).all()
+    return db.execute(select(models.Favorite).where(models.Favorite.user_id == current_user.id)).scalars().all()
 
 
 @router.post("/favorites/{product_id}", response_model=schemas.FavoriteOut, status_code=201)
@@ -21,14 +22,14 @@ def add_favorite(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product = db.get(models.Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
-    existing = (
-        db.query(models.Favorite)
-        .filter(models.Favorite.user_id == current_user.id, models.Favorite.product_id == product_id)
-        .first()
-    )
+    existing = db.execute(
+        select(models.Favorite).where(
+            models.Favorite.user_id == current_user.id, models.Favorite.product_id == product_id
+        )
+    ).scalar_one_or_none()
     if existing:
         return existing
     fav = models.Favorite(user_id=current_user.id, product_id=product_id)
@@ -44,11 +45,11 @@ def remove_favorite(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    fav = (
-        db.query(models.Favorite)
-        .filter(models.Favorite.user_id == current_user.id, models.Favorite.product_id == product_id)
-        .first()
-    )
+    fav = db.execute(
+        select(models.Favorite).where(
+            models.Favorite.user_id == current_user.id, models.Favorite.product_id == product_id
+        )
+    ).scalar_one_or_none()
     if fav:
         db.delete(fav)
         db.commit()

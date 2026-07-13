@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -26,11 +27,13 @@ def admin_list_low_stock_products(
     db: Session = Depends(get_db),
 ):
     return (
-        db.query(models.Product)
-        .filter(
-            models.Product.low_stock_threshold.isnot(None),
-            models.Product.stock <= models.Product.low_stock_threshold,
+        db.execute(
+            select(models.Product).where(
+                models.Product.low_stock_threshold.isnot(None),
+                models.Product.stock <= models.Product.low_stock_threshold,
+            )
         )
+        .scalars()
         .all()
     )
 
@@ -42,7 +45,7 @@ def admin_update_product(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product = db.get(models.Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
 
@@ -60,7 +63,7 @@ def admin_delete_product(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product = db.get(models.Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
 
@@ -76,7 +79,7 @@ def admin_add_product_image(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    if db.query(models.Product).filter(models.Product.id == product_id).first() is None:
+    if db.get(models.Product, product_id) is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
     image = models.ProductImage(
         product_id=product_id,
@@ -96,7 +99,7 @@ def admin_update_product_image(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    image = db.query(models.ProductImage).filter(models.ProductImage.id == image_id).first()
+    image = db.get(models.ProductImage, image_id)
     if image is None:
         raise HTTPException(status_code=404, detail="画像が見つかりません")
     image.image_url = image_in.image_url
@@ -112,7 +115,7 @@ def admin_delete_product_image(
     admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db),
 ):
-    image = db.query(models.ProductImage).filter(models.ProductImage.id == image_id).first()
+    image = db.get(models.ProductImage, image_id)
     if image is None:
         raise HTTPException(status_code=404, detail="画像が見つかりません")
     db.delete(image)

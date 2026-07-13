@@ -1,6 +1,7 @@
 import random
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -11,15 +12,15 @@ router = APIRouter()
 
 @router.get("/products", response_model=list[schemas.ProductOut])
 def list_products(q: str | None = None, db: Session = Depends(get_db)):
-    query = db.query(models.Product)
+    stmt = select(models.Product)
     if q:
-        query = query.filter(models.Product.name.ilike(f"%{q}%") | models.Product.description.ilike(f"%{q}%"))
-    return query.all()
+        stmt = stmt.where(models.Product.name.ilike(f"%{q}%") | models.Product.description.ilike(f"%{q}%"))
+    return db.execute(stmt).scalars().all()
 
 
 @router.get("/products/{product_id}", response_model=schemas.ProductOut)
 def get_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product = db.get(models.Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
@@ -27,26 +28,28 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
 @router.get("/products/{product_id}/recommendations", response_model=list[schemas.ProductOut])
 def get_recommendations(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product = db.get(models.Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     if product.category:
-        candidates = (
-            db.query(models.Product)
-            .filter(models.Product.category == product.category, models.Product.id != product_id)
-            .all()
+        stmt = select(models.Product).where(
+            models.Product.category == product.category, models.Product.id != product_id
         )
     else:
-        candidates = db.query(models.Product).filter(models.Product.id != product_id).all()
+        stmt = select(models.Product).where(models.Product.id != product_id)
+    candidates = db.execute(stmt).scalars().all()
     return random.sample(candidates, min(4, len(candidates)))
 
 
 @router.get("/products/{product_id}/reviews", response_model=list[schemas.ReviewOut])
 def list_reviews(product_id: int, db: Session = Depends(get_db)):
     reviews = (
-        db.query(models.Review)
-        .filter(models.Review.product_id == product_id)
-        .order_by(models.Review.created_at.desc())
+        db.execute(
+            select(models.Review)
+            .where(models.Review.product_id == product_id)
+            .order_by(models.Review.created_at.desc())
+        )
+        .scalars()
         .all()
     )
     result = []
@@ -64,15 +67,13 @@ def create_review(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    if db.query(models.Product).filter(models.Product.id == product_id).first() is None:
+    if db.get(models.Product, product_id) is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
     if not (1 <= review_in.rating <= 5):
         raise HTTPException(status_code=400, detail="評価は1〜5で指定してください")
-    existing = (
-        db.query(models.Review)
-        .filter(models.Review.user_id == current_user.id, models.Review.product_id == product_id)
-        .first()
-    )
+    existing = db.execute(
+        select(models.Review).where(models.Review.user_id == current_user.id, models.Review.product_id == product_id)
+    ).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=400, detail="すでにレビューを投稿済みです")
     review = models.Review(
@@ -91,11 +92,14 @@ def create_review(
 
 @router.get("/products/{product_id}/images", response_model=list[schemas.ProductImageOut])
 def list_product_images(product_id: int, db: Session = Depends(get_db)):
-    if db.query(models.Product).filter(models.Product.id == product_id).first() is None:
+    if db.get(models.Product, product_id) is None:
         raise HTTPException(status_code=404, detail="商品が見つかりません")
     return (
-        db.query(models.ProductImage)
-        .filter(models.ProductImage.product_id == product_id)
-        .order_by(models.ProductImage.display_order)
+        db.execute(
+            select(models.ProductImage)
+            .where(models.ProductImage.product_id == product_id)
+            .order_by(models.ProductImage.display_order)
+        )
+        .scalars()
         .all()
     )

@@ -295,3 +295,19 @@ flowchart LR
 - 影響範囲は`backend/app/auth.py`の`hash_password`/`verify_password`の2関数のみで、呼び出し側(`routers/users.py`等)はシグネチャ不変のため変更不要だった
 - `passlib`の`CryptContext(deprecated="auto")`が提供していた「将来的なハッシュ方式の移行」機能は使わなくなったが、本プロジェクトはbcrypt以外のハッシュ方式への移行予定がないため実質的な機能低下はないと判断した
 - 変更後、backendテストスイート(98件、既存の認証・パスワードハッシュ化系テストを含む)が全てgreenであることを確認し、`ruff`・`pip-audit`も合わせて再実行して問題がないことを確認した
+
+## 15. コーディング規約の新設とSQLAlchemy 2.0スタイルへの全面移行(2026-07-13)
+
+`docs/coding_conventions/`(共通・backend・frontend・testingの4ファイル)を新設した。要求定義〜内部設計の成果物とは性質が異なるプロジェクト運営ルールのため、本ドキュメント体系図の派生関係表には含めない(詳細は[[README|docs/README.md]] §5を参照)。作成にあたり、一般的なベストプラクティスをサブエージェント4体で並行調査した上で、実コードベース(`backend/app/`, `frontend/src/`, `backend/tests/`)の実態に基づいて執筆し、別のサブエージェント1体でレビューを行った。
+
+レビューの過程で、backendの実装(`models.py`のモデル定義、全ルーターのDBクエリ)がSQLAlchemy 1.x系のレガシースタイル(`Column(...)`, `db.query(...)`)であり、一般的なベストプラクティスである2.0系スタイル(`Mapped`/`mapped_column`, `select()`)と乖離していることが判明した。この乖離をどう規約に反映するか(現状維持/将来移行の方針明記/今回移行する)をユーザーに確認したところ、「規模がまだ小さい今のうちに移行する」との判断で、規約作成のついでに実装移行も行うことになった。
+
+| フェーズ | 追加・更新したドキュメント |
+|---|---|
+| プロジェクト運営ルール(新設) | `docs/coding_conventions/common.md`・`backend.md`・`frontend.md`・`testing.md`(新規)、`docs/README.md`(§5として参照セクションを追加) |
+| 実装 | `backend/app/database.py`(`declarative_base()`→`DeclarativeBase`継承)、`backend/app/models.py`(全10モデルを`Mapped`/`mapped_column`に書き換え)、`backend/app/auth.py`・`main.py`・`routers/*.py`(全12ファイル)・`services/order_actions.py`(`db.query(...)`を`select(...)`+`db.execute(...)`または`db.get(...)`に置き換え、計69箇所) |
+
+- モデル定義・クエリの書き方を全面的に書き換える一方、テーブル構造(カラム名・型・制約)・APIの入出力・ビジネスロジックは一切変更していない。既存のbackendテストスイート(98件)を無変更のまま実行し、全てgreenであることでこれを確認した
+- 単一行取得は`db.get(Model, id)`(主キー指定時)または`db.execute(select(...)).scalar_one_or_none()`(主キー以外の条件時)、複数行取得は`db.execute(select(...)).scalars().all()`に統一した。一括削除・一括更新(`db.query(...).delete()`/`.update()`相当)は`db.execute(delete(...))`/`db.execute(update(...))`に置き換えた
+- レビューエージェントが指摘した2点(規約書のスタイリング説明が実際の`className`+インライン`style`併用パターンを反映していなかった点、カスタムHookが`AuthContext.jsx`以外に`MainView.jsx`の`useQueryParamCallback`にも存在する点)は、実コードを再確認のうえ規約書に反映した。レート制限(`rate_limit.check_rate_limit`)への言及が抜けていた点も追加した
+- service/repository層の追加(router直書きからの責務分離)は、本プロジェクトの規模ではオーバーエンジニアリングと判断し、今回は見送った(`backend.md`末尾の「検討事項」として記録し、今後ルーターが肥大化した場合に再検討する)

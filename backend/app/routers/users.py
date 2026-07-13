@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import auth, config, email_utils, models, rate_limit, schemas
@@ -24,7 +25,7 @@ def register(user_in: schemas.UserCreate, request: Request, db: Session = Depend
     if not rate_limit.check_rate_limit(f"register:{request.client.host}", max_requests, window_seconds):
         raise HTTPException(status_code=429, detail=RATE_LIMIT_MESSAGE)
 
-    existing = db.query(models.User).filter(models.User.email == user_in.email).first()
+    existing = db.execute(select(models.User).where(models.User.email == user_in.email)).scalar_one_or_none()
     if existing is not None:
         raise HTTPException(status_code=400, detail="このメールアドレスは既に登録されています")
 
@@ -50,7 +51,7 @@ def login(credentials: schemas.UserLogin, request: Request, db: Session = Depend
     if not rate_limit.check_rate_limit(f"login:{request.client.host}", max_requests, window_seconds):
         raise HTTPException(status_code=429, detail=RATE_LIMIT_MESSAGE)
 
-    user = db.query(models.User).filter(models.User.email == credentials.email).first()
+    user = db.execute(select(models.User).where(models.User.email == credentials.email)).scalar_one_or_none()
     if user is None or not auth.verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
 
@@ -74,8 +75,8 @@ def delete_account(
 
     email_utils.send_account_deletion_email(current_user.email)
 
-    db.query(models.Address).filter(models.Address.user_id == current_user.id).delete()
-    db.query(models.Favorite).filter(models.Favorite.user_id == current_user.id).delete()
+    db.execute(delete(models.Address).where(models.Address.user_id == current_user.id))
+    db.execute(delete(models.Favorite).where(models.Favorite.user_id == current_user.id))
 
     current_user.email = f"deleted-user-{current_user.id}@deleted.invalid"
     current_user.hashed_password = auth.hash_password(os.urandom(32).hex())
@@ -86,7 +87,9 @@ def delete_account(
 
 @router.post("/auth/password-reset/request", status_code=200)
 def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == body.email, models.User.is_active.is_(True)).first()
+    user = db.execute(
+        select(models.User).where(models.User.email == body.email, models.User.is_active.is_(True))
+    ).scalar_one_or_none()
     if user is not None:
         user.password_reset_token = secrets.token_urlsafe(32)
         user.password_reset_token_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_EXPIRY
@@ -100,7 +103,7 @@ def request_password_reset(body: schemas.PasswordResetRequest, db: Session = Dep
 
 @router.post("/auth/password-reset/confirm", status_code=200)
 def confirm_password_reset(body: schemas.PasswordResetConfirm, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.password_reset_token == body.token).first()
+    user = db.execute(select(models.User).where(models.User.password_reset_token == body.token)).scalar_one_or_none()
     if (
         user is None
         or user.password_reset_token_expires_at is None
@@ -133,7 +136,9 @@ def resend_verification_email(
 
 @router.post("/auth/verify-email/confirm", status_code=200)
 def confirm_email_verification(body: schemas.EmailVerificationConfirm, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email_verification_token == body.token).first()
+    user = db.execute(
+        select(models.User).where(models.User.email_verification_token == body.token)
+    ).scalar_one_or_none()
     if (
         user is None
         or user.email_verification_token_expires_at is None

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import auth, email_utils, models, schemas
@@ -15,7 +16,7 @@ def create_order(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_items = db.query(models.Cart).filter(models.Cart.user_id == current_user.id).all()
+    cart_items = db.execute(select(models.Cart).where(models.Cart.user_id == current_user.id)).scalars().all()
     if not cart_items:
         raise HTTPException(status_code=400, detail="カートが空です")
 
@@ -31,11 +32,12 @@ def create_order(
     discount_amount = 0.0
     applied_coupon = None
     if order_in.coupon_code:
-        coupon = (
-            db.query(models.Coupon)
-            .filter(models.Coupon.code == order_in.coupon_code, models.Coupon.is_active == True)  # noqa: E712
-            .first()
-        )
+        coupon = db.execute(
+            select(models.Coupon).where(
+                models.Coupon.code == order_in.coupon_code,
+                models.Coupon.is_active == True,  # noqa: E712
+            )
+        ).scalar_one_or_none()
         if coupon is None:
             raise HTTPException(status_code=400, detail="無効なクーポンコードです")
         if coupon.max_uses is not None and coupon.used_count >= coupon.max_uses:
@@ -63,9 +65,10 @@ def list_orders(
     db: Session = Depends(get_db),
 ):
     return (
-        db.query(models.Order)
-        .filter(models.Order.user_id == current_user.id)
-        .order_by(models.Order.created_at.desc())
+        db.execute(
+            select(models.Order).where(models.Order.user_id == current_user.id).order_by(models.Order.created_at.desc())
+        )
+        .scalars()
         .all()
     )
 
@@ -76,7 +79,9 @@ def get_order(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    order = db.query(models.Order).filter(models.Order.id == order_id, models.Order.user_id == current_user.id).first()
+    order = db.execute(
+        select(models.Order).where(models.Order.id == order_id, models.Order.user_id == current_user.id)
+    ).scalar_one_or_none()
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     return order
@@ -88,7 +93,9 @@ def cancel_order(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    order = db.query(models.Order).filter(models.Order.id == order_id, models.Order.user_id == current_user.id).first()
+    order = db.execute(
+        select(models.Order).where(models.Order.id == order_id, models.Order.user_id == current_user.id)
+    ).scalar_one_or_none()
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     if order.status not in ("pending", "processing"):
@@ -113,7 +120,9 @@ def request_order_return(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    order = db.query(models.Order).filter(models.Order.id == order_id, models.Order.user_id == current_user.id).first()
+    order = db.execute(
+        select(models.Order).where(models.Order.id == order_id, models.Order.user_id == current_user.id)
+    ).scalar_one_or_none()
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
     if order.status != "shipped":
