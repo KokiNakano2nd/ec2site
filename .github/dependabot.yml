@@ -8,6 +8,12 @@ updates:
       pip-dependencies:
         patterns:
           - "*"
+    ignore:
+      # passlib 1.7.4 (unmaintained) reads bcrypt.__about__.__version__ during
+      # backend detection, which bcrypt>=4.1 removed; upgrading breaks all
+      # password hashing/verification. Revisit if/when passlib is replaced.
+      - dependency-name: "bcrypt"
+        versions: [">=4.1"]
 
   - package-ecosystem: "npm"
     directory: "/frontend"
