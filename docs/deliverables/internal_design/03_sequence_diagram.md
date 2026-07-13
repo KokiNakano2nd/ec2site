@@ -7,13 +7,14 @@
 
 ## UC-003: カード決済を使わずに注文を確定する
 
-`POST /orders`(`backend/app/main.py:218`)に対応する。
+`POST /orders`(`backend/app/routers/orders.py`)に対応する。
 
 ```mermaid
 sequenceDiagram
     actor 顧客
     participant Frontend as フロントエンド(CartView)
-    participant API as main.py(/orders)
+    participant API as routers/orders.py(/orders)
+    participant Service as services/order_actions.py(fulfill_order)
     participant DB as DB(carts, coupons, orders, order_items, products)
     participant Mail as email_utils(send_order_confirmation)
 
@@ -39,10 +40,12 @@ sequenceDiagram
                 end
             end
             API->>API: 小計・割引額・税(10%)・合計金額を計算
-            API->>DB: Order・OrderItemを作成、在庫を減算、カートを削除、クーポン使用回数を加算
-            DB-->>API: コミット完了(status="pending")
-            API->>Mail: send_order_confirmation(注文情報)
-            Mail-->>API: 送信完了(またはログ出力のみ)
+            API->>Service: fulfill_order(user, cart_items, total_price, discount_amount, coupon_code, status="pending", applied_coupon)
+            Service->>DB: Order・OrderItemを作成、在庫を減算、カートを削除、クーポン使用回数を加算
+            DB-->>Service: コミット完了(status="pending")
+            Service->>Mail: send_order_confirmation(注文情報)
+            Mail-->>Service: 送信完了(またはログ出力のみ)
+            Service-->>API: Order
             API-->>Frontend: 201 OrderOut
             Frontend->>顧客: 注文完了を表示
         end
@@ -51,7 +54,7 @@ sequenceDiagram
 
 ## UC-002: クレジットカードで支払う
 
-2つのエンドポイント(`POST /payment/checkout`→`POST /payment/complete`)にまたがる。`backend/app/main.py:840`, `main.py:895`。
+2つのエンドポイント(`POST /payment/checkout`→`POST /payment/complete`)にまたがる。`backend/app/routers/payment.py`。
 
 ### 2-1. Checkout Session作成(`POST /payment/checkout`)
 
@@ -59,13 +62,13 @@ sequenceDiagram
 sequenceDiagram
     actor 顧客
     participant Frontend as フロントエンド(CartView)
-    participant API as main.py(/payment/checkout)
+    participant API as routers/payment.py(/payment/checkout)
     participant DB as DB(carts, coupons)
     participant Stripe
 
     顧客->>Frontend: 「カードで決済(Stripe)」ボタン押下
     Frontend->>API: POST /payment/checkout (coupon_code)
-    API->>API: STRIPE_SECRET_KEY未設定チェック
+    API->>API: config.STRIPE_SECRET_KEY未設定チェック
     alt Stripe未設定
         API-->>Frontend: 400「Stripeが設定されていません」
     else Stripe設定済み
@@ -100,8 +103,9 @@ sequenceDiagram
 sequenceDiagram
     actor 顧客
     participant Frontend as フロントエンド(MainView.jsx)
-    participant API as main.py(/payment/complete)
+    participant API as routers/payment.py(/payment/complete)
     participant Stripe
+    participant Service as services/order_actions.py(fulfill_order)
     participant DB as DB(carts, coupons, orders, order_items, products)
     participant Mail as email_utils(send_order_confirmation)
 
@@ -130,10 +134,12 @@ sequenceDiagram
                     DB-->>API: クーポン or なし
                 end
                 API->>API: 小計・割引額・税(10%)・合計金額を計算
-                API->>DB: Order(status="processing")・OrderItemを作成、在庫を減算、カートを削除、クーポン使用回数を加算
-                DB-->>API: コミット完了
-                API->>Mail: send_order_confirmation(注文情報)
-                Mail-->>API: 送信完了(またはログ出力のみ)
+                API->>Service: fulfill_order(user, cart_items, total_price, discount_amount, coupon_code, status="processing", applied_coupon, stripe_payment_intent_id)
+                Service->>DB: Order・OrderItemを作成、在庫を減算、カートを削除、クーポン使用回数を加算
+                DB-->>Service: コミット完了
+                Service->>Mail: send_order_confirmation(注文情報)
+                Mail-->>Service: 送信完了(またはログ出力のみ)
+                Service-->>API: Order
                 API-->>Frontend: 200 OrderOut
                 Frontend->>顧客: 注文完了を表示
             end
@@ -143,13 +149,13 @@ sequenceDiagram
 
 ## 注文管理業務: 注文ステータスを更新する(管理者)
 
-`PATCH /admin/orders/{order_id}/status`(`backend/app/main.py:557`)に対応する。DB更新後にメール送信を行う多段処理のため、UC-002/UC-003と同様にシーケンス図を作成する。
+`PATCH /admin/orders/{order_id}/status`(`backend/app/routers/admin_orders.py`)に対応する。DB更新後にメール送信を行う多段処理のため、UC-002/UC-003と同様にシーケンス図を作成する。
 
 ```mermaid
 sequenceDiagram
     actor 管理者
     participant Frontend as フロントエンド(AdminOrdersView)
-    participant API as main.py(/admin/orders/{id}/status)
+    participant API as routers/admin_orders.py(/admin/orders/{id}/status)
     participant DB as DB(orders)
     participant Mail as email_utils(send_status_notification)
     actor 顧客
@@ -176,13 +182,13 @@ sequenceDiagram
 
 ## UC-005: 退会する(2026-07-11追加)
 
-`DELETE /users/me`(`backend/app/main.py`)に対応する。パスワード検証・DB複数テーブル更新・匿名化前アドレスへのメール送信・フロントエンド側ログアウトという多段処理のため、他のUCと同様にシーケンス図を作成する。
+`DELETE /users/me`(`backend/app/routers/users.py`)に対応する。パスワード検証・DB複数テーブル更新・匿名化前アドレスへのメール送信・フロントエンド側ログアウトという多段処理のため、他のUCと同様にシーケンス図を作成する。
 
 ```mermaid
 sequenceDiagram
     actor 顧客
     participant Frontend as フロントエンド(ProfileView)
-    participant API as main.py(/users/me)
+    participant API as routers/users.py(/users/me)
     participant DB as DB(users, addresses, favorites)
     participant Mail as email_utils(send_account_deletion_email)
 
@@ -203,7 +209,7 @@ sequenceDiagram
     end
 ```
 
-- メール送信(`send_account_deletion_email`)は、メールアドレスを匿名化する**前**に呼び出す(匿名化後では本人に届かないため)。この呼び出し順序は`main.py`の実装上の制約であり、他のUC(注文確認メール等)とは異なりDB更新より先に実行する
+- メール送信(`send_account_deletion_email`)は、メールアドレスを匿名化する**前**に呼び出す(匿名化後では本人に届かないため)。この呼び出し順序は`routers/users.py`の実装上の制約であり、他のUC(注文確認メール等)とは異なりDB更新より先に実行する
 - 注文履歴(`orders`/`order_items`)・レビュー(`reviews`)は本処理では更新・削除しない(UC-005備考、NFR-013参照)
 
 ## UC-006: 注文をキャンセルする(2026-07-11追加)
@@ -215,8 +221,9 @@ sequenceDiagram
     actor 顧客
     participant Frontend as フロントエンド(OrderHistoryView)
     participant API as routers/orders.py(/orders/{id}/cancel)
-    participant DB as DB(orders, order_items, products, coupons)
+    participant Service as services/order_actions.py(reverse_order)
     participant Stripe
+    participant DB as DB(orders, order_items, products, coupons)
     participant Mail as email_utils(send_status_notification)
 
     顧客->>Frontend: 「キャンセルする」ボタン押下
@@ -230,16 +237,21 @@ sequenceDiagram
         alt ステータスがpending/processing以外
             API-->>Frontend: 400「発送済みの注文はキャンセルできません」
         else pending/processing
+            API->>Service: reverse_order(order)
             opt stripe_payment_intent_idが設定されている
-                API->>Stripe: Refund.create(payment_intent)
+                Service->>Stripe: Refund.create(payment_intent)
                 alt Stripe API呼び出し失敗
-                    Stripe-->>API: Exception
+                    Stripe-->>Service: Exception
+                    Service-->>API: HTTPException(500)
                     API-->>Frontend: 500「返金処理に失敗しました」
                 else 返金成功
-                    Stripe-->>API: Refund
+                    Stripe-->>Service: Refund
                 end
             end
-            API->>DB: 在庫を注文数量分加算、クーポンused_countを1減算、statusをcancelledに更新
+            Service->>DB: 在庫を注文数量分加算、クーポンused_countを1減算
+            DB-->>Service: 反映完了
+            Service-->>API: 完了
+            API->>DB: statusをcancelledに更新
             DB-->>API: コミット完了
             API->>Mail: send_status_notification(注文者, 注文ID, "cancelled")
             Mail-->>API: 送信完了(またはログ出力のみ)
@@ -291,8 +303,9 @@ sequenceDiagram
     actor 管理者
     participant Frontend as フロントエンド(AdminOrdersView)
     participant API as routers/admin_orders.py(/admin/orders/{id}/return)
-    participant DB as DB(orders, order_items, products, coupons)
+    participant Service as services/order_actions.py(reverse_order)
     participant Stripe
+    participant DB as DB(orders, order_items, products, coupons)
     participant Mail as email_utils
     actor 顧客
 
@@ -313,16 +326,21 @@ sequenceDiagram
                 API->>Mail: send_return_rejected_email(注文者, 注文ID)
                 Mail->>顧客: 返品却下通知メールを送信する
             else action == "approve"
+                API->>Service: reverse_order(order)
                 opt stripe_payment_intent_idが設定されている
-                    API->>Stripe: Refund.create(payment_intent)
+                    Service->>Stripe: Refund.create(payment_intent)
                     alt Stripe API呼び出し失敗
-                        Stripe-->>API: Exception
+                        Stripe-->>Service: Exception
+                        Service-->>API: HTTPException(500)
                         API-->>Frontend: 500「返金処理に失敗しました」
                     else 返金成功
-                        Stripe-->>API: Refund
+                        Stripe-->>Service: Refund
                     end
                 end
-                API->>DB: 在庫を注文数量分加算、クーポンused_countを1減算、statusをreturnedに更新
+                Service->>DB: 在庫を注文数量分加算、クーポンused_countを1減算
+                DB-->>Service: 反映完了
+                Service-->>API: 完了
+                API->>DB: statusをreturnedに更新
                 DB-->>API: コミット完了
                 API->>Mail: send_status_notification(注文者, 注文ID, "returned")
                 Mail->>顧客: ステータス変更通知メールを送信する
