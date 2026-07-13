@@ -2,12 +2,31 @@
 
 記載ルールは `docs/templates/external_design/api_spec_template.md` を参照。
 
-個別のエンドポイント仕様は`api_spec/`配下のファイルへ分離した(1エンドポイント=1ファイル)。本ファイルは一覧とリンク集を提供する。
+## 正本と補足文書
+
+- **機械可読な正本**: [openapi.json](openapi.json)。FastAPIのルートとPydanticスキーマから生成し、CIで実装との差分を検知する
+- **業務上の補足**: `api_spec/`配下のMarkdown(1エンドポイント=1ファイル)。機能ID、業務上の意味、固有の業務エラーを記載する
+- 実行中のローカルAPIでは`/docs`、`/redoc`、`/openapi.json`から同じOpenAPI仕様を参照できる
+
+## 共通レスポンス
+
+個別Markdownの「エラーレスポンス: なし」は「固有の業務エラーがない」という意味であり、次の共通レスポンスは該当する全エンドポイントへ適用される。型とレスポンススキーマの最終的な正本は`openapi.json`とする。
+
+| ステータス | 適用対象 | 条件 |
+|---|---|---|
+| 401 | `認証: 必要`の全エンドポイント | Bearerトークンがない、無効、期限切れ、または退会済み |
+| 403 | `/admin/*` | 認証済みだが管理者権限がない |
+| 422 | FastAPIがパス・クエリ・リクエストボディを検証するエンドポイント | 型、必須項目、形式等の入力検証エラー |
+| 429 | `POST /auth/login`, `POST /auth/register` | IPアドレス単位のレート制限超過 |
+
+## エンドポイント一覧
 
 | 業務領域 | リソース | メソッド | パス | 概要 | 詳細 |
 |---|---|---|---|---|---|
 | 商品購入業務 | /products | GET | `/products` | 商品一覧を取得する | [products__get.md](api_spec/products__get.md) |
 | 商品購入業務 | /products | GET | `/products/{product_id}` | 商品詳細を取得する | [products_product_id__get.md](api_spec/products_product_id__get.md) |
+| 商品購入業務 | /products | GET | `/products/{product_id}/recommendations` | おすすめ商品を取得する | [products_product_id_recommendations__get.md](api_spec/products_product_id_recommendations__get.md) |
+| 商品購入業務 | /products | GET | `/products/{product_id}/images` | 商品画像一覧を取得する | [products_product_id_images__get.md](api_spec/products_product_id_images__get.md) |
 | 商品購入業務 | /cart | GET | `/cart` | カート内商品一覧を取得する | [cart__get.md](api_spec/cart__get.md) |
 | 商品購入業務 | /cart | POST | `/cart` | カートに商品を追加する | [cart__post.md](api_spec/cart__post.md) |
 | 商品購入業務 | /cart | PATCH | `/cart/{cart_id}` | カート内商品の数量を変更する | [cart_cart_id__patch.md](api_spec/cart_cart_id__patch.md) |
@@ -15,6 +34,7 @@
 | 商品購入業務 | /coupons | GET | `/coupons/validate` | クーポンコードを検証する | [coupons_validate__get.md](api_spec/coupons_validate__get.md) |
 | 商品購入業務 | /orders | POST | `/orders` | カード決済を使わずに注文を確定する | [orders__post.md](api_spec/orders__post.md) |
 | 商品購入業務 | /orders | GET | `/orders` | 注文履歴を取得する | [orders__get.md](api_spec/orders__get.md) |
+| 商品購入業務 | /orders | GET | `/orders/{order_id}` | 注文詳細を取得する | [orders_order_id__get.md](api_spec/orders_order_id__get.md) |
 | 商品購入業務 | /orders | POST | `/orders/{order_id}/cancel` | 注文をキャンセルする | [orders_order_id_cancel__post.md](api_spec/orders_order_id_cancel__post.md) |
 | 商品購入業務 | /orders | POST | `/orders/{order_id}/return-request` | 返品を申請する | [orders_order_id_return_request__post.md](api_spec/orders_order_id_return_request__post.md) |
 | 商品購入業務 | /payment | GET | `/config` | システム設定を取得する | [config__get.md](api_spec/config__get.md) |

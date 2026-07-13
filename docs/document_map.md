@@ -1,12 +1,12 @@
 # ドキュメント体系図
 
-全体ルール: [[README|docs/README.md]](UML記法統一ルール(必須)を含む)
+全体ルール: [[README|docs/README.md]](図の記法選定ルールを含む)
 
 各ドキュメントを「成果物(オブジェクト)」とみなし、あるドキュメントの記載内容(User Story, ユースケース, 機能, 画面等のID)をインプットにして次のドキュメントが作られる、という流れを示す。例:「User Storyをインプットにユースケースができる」「ユースケースをインプットに機能一覧ができる」。
 
 矢印の向きは「インプット → 作成されるドキュメント」。UMLアクティビティ図のオブジェクトフロー(各ドキュメント=UMLオブジェクトノード)として、Mermaid `flowchart`(フェーズは`subgraph`によるパーティション)で近似表現する([[README|docs/README.md]] 全体ルールに基づく)。
 
-対象は、商品購入業務および2026-07-06に追加した8業務(会員管理・お気に入り・レビュー投稿・配送先管理・商品管理・クーポン管理・注文管理・売上分析)を含む、現時点で作成済みの全実ドキュメント。ドキュメントファイル自体は業務追加前と同じ16ファイルのまま(各ファイルに業務ごとの見出しを追加する形で拡張したため)、下図のノード構成は変わらない。矢印(インプット関係)のラベルは商品購入業務分のみを代表として記載しており、他8業務分の詳細なインプット関係は[2節](#2-派生関係の補足)の表を参照。テンプレートとの対応関係(1テンプレート:1実ドキュメント)は本図には含めず、[3節](#3-テンプレートとの対応関係)に別途記載する。
+対象は、商品閲覧・購入を含む全業務と、横断的なシステム要求、アーキテクチャ、検証、運用の成果物である。矢印は主な派生・入力関係を示し、詳細なID単位の追跡は`verification/01_traceability_matrix.md`を正本とする。テンプレートとの対応は[3節](#3-テンプレートとの対応関係)に記載する。
 
 ## 1. 全体構成
 
@@ -17,6 +17,7 @@ flowchart LR
         A2["02_user_stories.md"]
     end
     subgraph requirements["要件定義"]
+        B0["00_system_requirements.md"]
         B1["01_use_cases.md"]
         B2["03_function_list.md"]
         B3["04_conceptual_er.md"]
@@ -24,6 +25,11 @@ flowchart LR
         B5["06_nonfunctional_requirements.md"]
         B6["07_glossary.md"]
         B7["08_stakeholders.md"]
+    end
+    subgraph architecture["アーキテクチャ"]
+        X1["01_architecture_overview.md"]
+        X2["02_deployment_design.md"]
+        X3["03_security_privacy_design.md / ADR"]
     end
     subgraph external_design["外部設計"]
         C1["01_screen_design.md"]
@@ -37,7 +43,19 @@ flowchart LR
         D3["03_sequence_diagram.md"]
         D4["04_error_handling_design.md"]
     end
+    subgraph verification["検証"]
+        V1["01_traceability_matrix.md"]
+        V2["02_test_plan.md"]
+    end
+    subgraph operations["運用"]
+        O1["01_operations_runbook.md"]
+        O2["02_monitoring_alerting.md"]
+        O3["03_backup_restore.md"]
+        O4["04_release_migration.md"]
+    end
 
+    B0 --> A1
+    B0 --> X1
     A1 -->|業務フローの各ステップをインプットに| A2
     A2 -->|US-002,003,004をインプットに| B1
     A2 -->|US-001,003,005をインプットに| B2
@@ -58,23 +76,39 @@ flowchart LR
     B1 -->|UC-002,003をインプットに| D3
     C2 -->|エンドポイントの呼び出し順序をインプットに| D3
     C2 -->|エラーレスポンス一覧をインプットに| D4
+    B0 --> X2
+    B5 --> X2
+    B5 --> X3
+    X1 --> X2
+    X1 --> X3
+    B2 --> V1
+    C1 --> V1
+    C2 --> V1
+    B5 --> V2
+    V1 --> V2
+    X2 --> O1
+    B5 --> O2
+    X2 --> O3
+    X2 --> O4
+    V2 --> O3
+    V2 --> O4
 ```
 
-- `06_nonfunctional_requirements.md`(B5)は、他ドキュメントへの明示的なインプット関係が記載上追えないため、上図では他ノードへの矢印を引いていない([2節](#2-派生関係の補足)参照)。
-- 上図の矢印は商品購入業務分を代表として示したものであり、2026-07-06に追加した8業務(会員管理・お気に入り・レビュー投稿・配送先管理・商品管理・クーポン管理・注文管理・売上分析)についても、A2(User Story)→B1/B2/B4(ユースケース/機能一覧/画面一覧)→C1/C2(画面設計/API仕様)→D1〜D4(内部設計)という同じ流れで作成されている。業務ごとの詳細なID対応は[2節](#2-派生関係の補足)を参照。
+- 業務ごとのA2(User Story)→B1/B2/B4(ユースケース/機能一覧/画面一覧)→C1/C2(画面設計/API仕様)→D1〜D4(内部設計)の詳細は[2節](#2-派生関係の補足)と追跡表を参照する。
 - `07_glossary.md`(B6)・`08_stakeholders.md`(B7)は、2026-07-11に追加した横断的なドキュメントであり、上図では特定の単一ドキュメントをインプットとする矢印を引いていない(既存の複数ドキュメントの記載を集約・要約したものであるため)。詳細は[2節](#2-派生関係の補足)を参照。
 
 ## 2. 派生関係の補足
 
 | フェーズ | ドキュメント | 主な派生元 | 備考 |
 |---|---|---|---|
-| 要求定義 | `01_business_flow.md` | (起点。業務エキスパートへのヒアリングが入力) | ヒアリングにより確認した内容を基に作成 |
+| 要件定義 | `00_system_requirements.md` | プロジェクト目的、所有者判断、実装監査 | システム境界、スコープ、制約、未決事項の上位正本 |
+| 要求定義 | `01_business_flow.md` | システム目的、プロジェクト所有者の判断、既存実装の監査 | 実在する業務エキスパートは不在。As-Isと業務規則は学習用仮説または未確認として扱う |
 | 要求定義 | `02_user_stories.md` | `01_business_flow.md` | 業務フロー図の各ステップからUser Storyを起こす |
 | 要件定義 | `01_use_cases.md` | `02_user_stories.md` | 複雑度が高いUser Story(分岐が多いもの等)をユースケース化 |
 | 要件定義 | `03_function_list.md` | `01_use_cases.md`, `02_user_stories.md` | F-008はUC-003(外部設計フェーズで発見し要件定義に遡って追加)由来 |
 | 要件定義 | `04_conceptual_er.md` | `02_user_stories.md` | User Story本文に登場する概念を抽出 |
 | 要件定義 | `05_screen_list.md` | `02_user_stories.md`, `01_use_cases.md` | S-002はUC-003追加に伴い記載を更新済み |
-| 要件定義 | `06_nonfunctional_requirements.md` | (行単位のトレーサビリティは未整備) | 現状、個別のUser Story/ユースケースとの1対1対応は記載していない。将来的に整備する場合は本図・本表を更新する。2026-07-11、個人情報保護方針(NFR-012〜016)を追加 |
+| 要件定義 | `06_nonfunctional_requirements.md` | システム要求、ステークホルダー関心事、リスク | 各NFRに検証方法・状態・責任を持たせ、検証計画へ接続する |
 | 要件定義 | `07_glossary.md`(2026-07-11追加) | `02_user_stories.md`, `04_conceptual_er.md`, `03_function_list.md`, `05_screen_list.md` | 各ドキュメントに散在するドメイン用語・ID接頭辞を集約した用語集。一般監査(業界標準の要件定義成果物との比較)で用語集の欠落が指摘されたことを受けて追加 |
 | 要件定義 | `08_stakeholders.md`(2026-07-11追加) | `use_cases/UC-001.md`〜`UC-004.md`の「ステークホルダーと関心事」欄 | UC単位に閉じていたステークホルダー記載をプロジェクト全体で集約。同様に一般監査を受けて追加 |
 | 外部設計 | `01_screen_design.md` | `05_screen_list.md` | 画面ごとに1:1対応 |
@@ -85,53 +119,76 @@ flowchart LR
 | 内部設計 | `02_module_design.md` | `02_api_spec.md` | エンドポイント→実装モジュールの対応 |
 | 内部設計 | `03_sequence_diagram.md` | `01_use_cases.md`, `02_api_spec.md` | 複数コンポーネントが絡む処理(UC-002, UC-003)のみ作成 |
 | 内部設計 | `04_error_handling_design.md` | `02_api_spec.md` | エラーレスポンスの内部的な発生箇所を整理 |
+| 検証 | `verification/01_traceability_matrix.md` | User Story、ユースケース、機能一覧、画面/API仕様、自動テスト | 要求→設計→検証を42機能単位で対応付け、部分検証を明示する |
+| 検証 | `verification/02_test_plan.md` | トレーサビリティ、NFR、リスク | レベル、環境、開始/終了基準、欠陥管理を定義する |
+| アーキテクチャ | `architecture/01_architecture_overview.md` | システム要求、ステークホルダー、実装構成 | Context/Container、関心事、決定・リスクを整理する |
+| アーキテクチャ | `architecture/02_deployment_design.md` | システム要求、アーキテクチャ、NFR、実装構成 | 環境、構成値、本番化ゲートを定義する |
+| アーキテクチャ | `architecture/03_security_privacy_design.md` | システム要求、NFR、データ/外部IF、実装 | DFD、脅威、制御、個人データを整理する |
+| 運用 | `operations/01_operations_runbook.md` | デプロイ、エラー設計、監視 | 起動・診断・インシデント初動を定義する |
+| 運用 | `operations/02_monitoring_alerting.md` | NFR、エラー/ログ、デプロイ | SLI、アラート、通知・演習を定義する |
+| 運用 | `operations/03_backup_restore.md` | NFR、DB/デプロイ、テスト計画 | RPO/RTO、対象、復元演習を定義する |
+| 運用 | `operations/04_release_migration.md` | デプロイ、DB、CI、テスト計画 | artifact昇格、migration、release判定を定義する |
 
-- `06_nonfunctional_requirements.md`は他の実ドキュメントと異なり、行単位の「元になったドキュメント」列を持たない。本図では派生元を明示できないため、今後の課題として記載するに留める(実装を勝手に補って断定しない)。
+- 機能要求の詳細な双方向対応と検証状態は`verification/01_traceability_matrix.md`を正本とする。本書のID対応表は概要であり、テスト網羅性の判定には使用しない。
 
-### 2-1. 追加8業務のID対応表(2026-07-06追加)
+### 2-1. 業務別ID対応表
 
-上記16ファイルはそのままに、各ファイル内に業務ごとの見出しを追加する形で対応した。業務ごとのID対応は以下の通り。
+業務ごとの主要なID対応は以下の通り。全42機能のテスト対応は追跡表を参照する。
 
 | 業務領域 | User Story | ユースケース | 機能 | 画面 | 内部設計での参照箇所 |
 |---|---|---|---|---|---|
 | 会員管理業務 | US-006, US-007, US-020(2026-07-11追加) | (なし。分岐が少ないためUC化していない)、US-020のみUC-005化 | F-009, F-010, F-030 | S-005, S-007(退会) | `02_module_design.md`「/auth」行、退会は「/users/me」行 |
 | お気に入り管理業務 | US-008 | (なし) | F-011, F-012 | S-006(S-001にもボタンあり) | 同上「/favorites」行 |
 | レビュー投稿業務 | US-009 | UC-004 | F-013, F-014 | S-001(商品詳細内) | `03_sequence_diagram.md`で検討の上、単純処理のため図は作成せず |
-| 配送先管理業務 | US-010, US-011, US-012 | (なし) | F-015〜F-019 | S-007(S-002は選択のみ) | `01_table_definition.md`ADDRESSテーブル、`04_error_handling_design.md`「/addresses」各行 |
+| 配送先管理業務 | US-010, US-011, US-012, US-032 | (なし) | F-015〜F-019 | S-007(S-002は選択のみ) | `01_table_definition.md`ADDRESSテーブル、`04_error_handling_design.md`「/addresses」各行 |
 | 商品管理業務(管理者) | US-013, US-014, US-015, US-024(2026-07-12追加) | (なし) | F-020〜F-022, F-034 | S-101(低在庫バッジ), S-104(低在庫アラート) | `02_module_design.md`「/admin/products」行、`03_sequence_diagram.md`「低在庫アラートを確認する(管理者)」 |
-| クーポン管理業務(管理者) | US-016, US-017, US-025(2026-07-13追加) | (なし) | F-023〜F-026, F-035 | S-102(残数僅少バッジ), S-104(クーポン残数アラート) | 同上「/admin/coupons」行、`03_sequence_diagram.md`「クーポン残数アラートを確認する(管理者)」 |
+| クーポン管理業務(管理者) | US-016, US-017, US-025, US-033 | (なし) | F-023〜F-026, F-035 | S-102(残数僅少バッジ), S-104(クーポン残数アラート) | 同上「/admin/coupons」行、`03_sequence_diagram.md`「クーポン残数アラートを確認する(管理者)」 |
 | 会員管理業務(パスワードリセット、2026-07-13追加) | US-026 | UC-009 | F-036 | S-008, S-009(ログイン画面(S-005)からリンク) | `02_module_design.md`「/auth/password-reset」行、`03_sequence_diagram.md`「UC-009」 |
 | 会員管理業務(メールアドレスの本人確認、2026-07-13追加) | US-027 | UC-010 | F-037 | S-007(バッジ・再送ボタン。専用の確認画面は起こさず) | `02_module_design.md`「/auth/verify-email」行、`03_sequence_diagram.md`「UC-010」 |
-| 注文管理業務(管理者) | US-018, US-023(2026-07-11追加) | (なし)、US-023のみUC-008化 | F-027, F-028, F-033 | S-103(返品承認・却下) | `03_sequence_diagram.md`「注文ステータスを更新する(管理者)」「UC-008」 |
+| 注文管理業務(管理者) | US-018, US-023, US-034 | (なし)、US-023のみUC-008化 | F-027, F-028, F-033 | S-103(返品承認・却下) | `03_sequence_diagram.md`「注文ステータスを更新する(管理者)」「UC-008」 |
 | 売上分析業務(管理者) | US-019 | (なし) | F-029 | S-104 | `02_module_design.md`「/admin/analytics」行 |
+| 商品閲覧・注文参照 | US-028〜031 | (なし) | F-038〜F-042 | S-001, S-004 | `02_module_design.md`「/products」「/orders」行、API補足文書 |
 
-- レビュー投稿業務(UC-004)のみ、分岐が3つ以上あるためユースケース化した。他の7業務は分岐が少なく(0〜2)、User Storyの段階で留めている(`02_user_stories.md`の各「複雑度判定」参照)
+- 分岐・例外が多いUser Storyだけをユースケース化し、単純な参照・更新はUser Storyの受け入れ条件で定義する。
 
 ## 3. テンプレートとの対応関係
 
-各実ドキュメントは、同名の(または対応する)テンプレートファイルに基づいて作成されている(1テンプレート:1実ドキュメントの対応)。
+各実ドキュメントは、同名または対応するテンプレートに基づく。ADRのように1テンプレートから複数成果物を作る場合もある。
 
 | フェーズ | テンプレート(`docs/templates/<phase>/`) | 実ドキュメント(`docs/deliverables/<phase>/`) |
 |---|---|---|
 | demand_definition | `business_flow_template.md` | `01_business_flow.md` |
 | demand_definition | `user_story_template.md` | `02_user_stories.md` |
+| requirements | `system_requirements_template.md` | `00_system_requirements.md` |
 | requirements | `use_case_template.md` | `01_use_cases.md` |
 | requirements | `acceptance_criteria_template.md` | (対象ドキュメントなし。意図的に単独ファイル化していない — 下記補足参照) |
 | requirements | `function_list_template.md` | `03_function_list.md` |
+| verification | `traceability_matrix_template.md` | `01_traceability_matrix.md` |
+| verification | `test_plan_template.md` | `02_test_plan.md` |
 | requirements | `conceptual_er_template.md` | `04_conceptual_er.md` |
 | requirements | `screen_list_template.md` | `05_screen_list.md` |
 | requirements | `nonfunctional_requirements_template.md` | `06_nonfunctional_requirements.md` |
+| requirements | `glossary_template.md` | `07_glossary.md` |
+| requirements | `stakeholders_template.md` | `08_stakeholders.md` |
+| architecture | `architecture_overview_template.md` | `01_architecture_overview.md` |
+| architecture | `deployment_design_template.md` | `02_deployment_design.md` |
+| architecture | `security_privacy_design_template.md` | `03_security_privacy_design.md` |
+| architecture | `adr_template.md` | `adr/ADR-*.md` |
 | external_design | `screen_design_template.md` | `01_screen_design.md` |
-| external_design | `api_spec_template.md` | `02_api_spec.md` |
+| external_design | `api_spec_template.md` | `openapi.json`(機械可読な正本), `02_api_spec.md`/`api_spec/*.md`(業務上の補足) |
 | external_design | `external_interface_template.md` | `03_external_interface.md` |
 | external_design | `notification_design_template.md` | `04_notification_design.md` |
 | internal_design | `table_definition_template.md` | `01_table_definition.md` |
 | internal_design | `module_design_template.md` | `02_module_design.md` |
 | internal_design | `sequence_diagram_template.md` | `03_sequence_diagram.md` |
 | internal_design | `error_handling_design_template.md` | `04_error_handling_design.md` |
+| operations | `operations_template.md` | `01_operations_runbook.md` |
+| operations | `monitoring_alerting_template.md` | `02_monitoring_alerting.md` |
+| operations | `backup_restore_template.md` | `03_backup_restore.md` |
+| operations | `release_migration_template.md` | `04_release_migration.md` |
 
-- `acceptance_criteria_template.md`の1行目に「対象ドキュメント: なし(単独の実ドキュメントは作らない。`02_user_stories.md`内の各User Storyの`Confirmation`欄に直接記述する)」と明記されている(2026-07-11、一般的な業界標準との比較監査の過程で再確認)。したがって`02_acceptance_criteria.md`が存在しないのは欠落ではなく、テンプレート自体が定める意図的な設計である。全19件のUser Story(`user_stories/US-001.md`〜`US-019.md`)にConfirmation欄が存在することを確認済み。
-- `07_glossary.md`・`08_stakeholders.md`(2026-07-11追加)には対応する専用テンプレートが存在しない。既存16ファイルの記載を集約する横断ドキュメントという性質のため、他ドキュメントのように単一テンプレートに1対1対応させる形はとっていない。テンプレート化する場合は今後の課題とする。
+- `acceptance_criteria_template.md`の1行目に「対象ドキュメント: なし(単独の実ドキュメントは作らない。`02_user_stories.md`内の各User Storyの`Confirmation`欄に直接記述する)」と明記されている。したがって`02_acceptance_criteria.md`が存在しないのは欠落ではない。全34件のUser Story(`user_stories/US-001.md`〜`US-034.md`)にConfirmation欄が存在する。
+- 横断文書も更新時の品質を一定にするため、用語集・ステークホルダー・アーキテクチャ・検証・運用に専用テンプレートを置く。
 
 ## 4. 概要+詳細分離ドキュメントのリンク集(2026-07-06追加)
 
@@ -140,10 +197,10 @@ flowchart LR
 | フェーズ | 概要ファイル(入口) | 詳細ファイルの格納先 | 分離単位 |
 |---|---|---|---|
 | 要求定義 | [01_business_flow.md](deliverables/demand_definition/01_business_flow.md) | `deliverables/demand_definition/business_flow/` | 1業務=1ファイル(9業務) |
-| 要求定義 | [02_user_stories.md](deliverables/demand_definition/02_user_stories.md) | `deliverables/demand_definition/user_stories/` | 1User Story=1ファイル(27件、2026-07-13 US-027追加) |
+| 要求定義 | [02_user_stories.md](deliverables/demand_definition/02_user_stories.md) | `deliverables/demand_definition/user_stories/` | 1User Story=1ファイル(34件) |
 | 要件定義 | [01_use_cases.md](deliverables/requirements/01_use_cases.md) | `deliverables/requirements/use_cases/` | 1ユースケース=1ファイル(10件、2026-07-13 UC-010追加) |
-| 要件定義 | [03_function_list.md](deliverables/requirements/03_function_list.md) | `deliverables/requirements/function_list/` | 1機能=1ファイル(37件、2026-07-13 F-037追加) |
-| 外部設計 | [02_api_spec.md](deliverables/external_design/02_api_spec.md) | `deliverables/external_design/api_spec/` | 1エンドポイント=1ファイル(51件、2026-07-13 パスワードリセット2件・メール確認2件を追加) |
+| 要件定義 | [03_function_list.md](deliverables/requirements/03_function_list.md) | `deliverables/requirements/function_list/` | 1機能=1ファイル(42件) |
+| 外部設計 | [02_api_spec.md](deliverables/external_design/02_api_spec.md) | `deliverables/external_design/api_spec/` | 1エンドポイント=1補足ファイル(54件)。機械可読な正本は同階層の`openapi.json` |
 
 - 上記以外のドキュメント(概念ER図・画面一覧・画面設計・通知設計・内部設計各種等)は、項目数がまだ少なく肥大化していないため、分離を行っていない。今後項目数が増え見づらくなった場合は、同様の方針で分離を検討する。
 - 詳細ファイルはいずれも、概要ファイルへの「戻る」リンクと、元になったUser Story/機能等のIDを内部に保持しており、概要ファイル単体・詳細ファイル単体のどちらからでもトレーサビリティを追える。
@@ -160,7 +217,7 @@ flowchart LR
 | 追記 | `external_design/03_external_interface.md` | SMTP(メール送信基盤)連携のセクションを追加。従来Stripeのみ記載されていたが、`email_utils.py`のメール送信連携が記載漏れであったため |
 | 追記 | `internal_design/04_error_handling_design.md` | 「ログ設計」節を追加。従来「ログ出力」欄が全行「なし」だった箇所のうち、外部サービス(Stripe, SMTP)呼び出し失敗と決済完了時の不正アクセス試行(`user_id`不一致)の3箇所について、実装(`backend/app/logging_config.py`)を追加しログ出力するよう修正した上でドキュメントを更新 |
 
-- 上記のうち監査で指摘された「テスト仕様書」「運用/監視設計書」「移行計画書」「セキュリティ設計書の独立文書化」等は、本プロジェクトの規模(個人学習用ECサイト、決済はStripeへ委任)を踏まえ、現時点では過剰投資と判断し対応を見送った。将来的にプロジェクトの性質が変わった場合(チーム開発化・本番運用開始等)に再検討する。
+- 2026-07-13の再監査では、規模を理由に文書種別そのものを省略せず、内容の深さを現状に合わせる方針へ変更した。システム要求、アーキテクチャ、セキュリティ、トレーサビリティ、テスト計画、運用/監視、バックアップ/復元、リリース/移行を追加し、未実装項目は本番化ゲートとして明示した。
 
 ## 6. 新機能追加の例: 退会機能(F-030, 2026-07-11)
 
@@ -263,7 +320,7 @@ flowchart LR
 | 内部設計 | `01_table_definition.md`(usersテーブルに`is_verified`/`email_verification_token`/`email_verification_token_expires_at`を追加)、`02_module_design.md`(エンドポイント対応表・email_utilsの役割を更新)、`03_sequence_diagram.md`(UC-010のシーケンス図を新規追加) |
 | 実装 | `backend/app/models.py`, `schemas.py`, `routers/users.py`, `main.py`, `email_utils.py`、`frontend/src/api/auth.js`, `pages/ProfileView.jsx`, `pages/MainView.jsx` |
 
-- メールアドレスが未確認(`is_verified=false`)であっても、ログイン・購入等の既存機能を一切制限しない非ブロッキング設計とした。プロフィール画面にバッジと再送ボタンを表示するのみに留める。この設計判断(ブロッキングにしない)は、本機能を担当したエンジニアの判断によるものであり、業務エキスパートへの正式な事前確認は行っていない。将来的にブロッキングが必要になった場合は業務エキスパートと協議のうえ関連ドキュメントを更新する
+- メールアドレス未確認でも既存機能を制限しない挙動は、実装由来・業務未確認の暫定仕様(CON-006/TBD-004)として管理し、本番化前にプロジェクト所有者が許可操作を決定する
 - 確認用トークンの有効期限は7日間とし、パスワードリセット(24時間)より長く設定した。パスワードリセットと異なりセキュリティ上の緊急性が低く、顧客がメールにすぐ気づかない可能性を考慮したため
 - 確認リンクのクリックはフォーム入力を要さず、トークンのみで完結するため、パスワードリセットのような専用の確認画面(S-008/S-009に相当するもの)は起こさなかった。フロントエンドはStripe決済完了時の`?payment=success`処理と同じパターンで、アプリ起動時にクエリパラメータ`?verify_token=...`を検知して自動的に確認APIを呼び出し、結果を既存のトースト通知で表示する設計とした
 
@@ -293,12 +350,14 @@ flowchart LR
 | 実装 | `backend/app/auth.py`(`passlib.context.CryptContext`を廃止し、`bcrypt.hashpw`/`bcrypt.checkpw`を直接呼び出す実装に変更)、`backend/pyproject.toml`(`passlib[bcrypt]`を削除、`bcrypt`のピン留めを解除し`bcrypt>=4.1`に緩和)、`backend/uv.lock`(再生成、`bcrypt`は5.0.0へ)、`.github/dependabot.yml`(不要になった`bcrypt>=4.1`の`ignore`ルールを削除) |
 
 - 影響範囲は`backend/app/auth.py`の`hash_password`/`verify_password`の2関数のみで、呼び出し側(`routers/users.py`等)はシグネチャ不変のため変更不要だった
-- `passlib`の`CryptContext(deprecated="auto")`が提供していた「将来的なハッシュ方式の移行」機能は使わなくなったが、本プロジェクトはbcrypt以外のハッシュ方式への移行予定がないため実質的な機能低下はないと判断した
+- 当時はbcrypt以外への移行予定がないと判断していたが、その後のコーディング規約レビューでArgon2idへの移行を決定した。新しい段階移行機構は後述の§16で実装した
 - 変更後、backendテストスイート(98件、既存の認証・パスワードハッシュ化系テストを含む)が全てgreenであることを確認し、`ruff`・`pip-audit`も合わせて再実行して問題がないことを確認した
 
 ## 15. コーディング規約の新設とSQLAlchemy 2.0スタイルへの全面移行(2026-07-13)
 
 `docs/coding_conventions/`(共通・backend・frontend・testingの4ファイル)を新設した。要求定義〜内部設計の成果物とは性質が異なるプロジェクト運営ルールのため、本ドキュメント体系図の派生関係表には含めない(詳細は[[README|docs/README.md]] §5を参照)。作成にあたり、一般的なベストプラクティスをサブエージェント4体で並行調査した上で、実コードベース(`backend/app/`, `frontend/src/`, `backend/tests/`)の実態に基づいて執筆し、別のサブエージェント1体でレビューを行った。
+
+その後の厳格レビューで、既存実装を規約の主な根拠にすると技術的負債まで標準化する問題があると判断した。規約の根拠を「公式仕様・公開標準・プロジェクト要件・既存実装」の順に改め、標準・例外・移行対象・要決定を区別する構成へ更新した。併せて、セキュリティ、DBトランザクションと同時実行、React Effect、アクセシビリティ、E2Eを含むテスト戦略を補強した。
 
 レビューの過程で、backendの実装(`models.py`のモデル定義、全ルーターのDBクエリ)がSQLAlchemy 1.x系のレガシースタイル(`Column(...)`, `db.query(...)`)であり、一般的なベストプラクティスである2.0系スタイル(`Mapped`/`mapped_column`, `select()`)と乖離していることが判明した。この乖離をどう規約に反映するか(現状維持/将来移行の方針明記/今回移行する)をユーザーに確認したところ、「規模がまだ小さい今のうちに移行する」との判断で、規約作成のついでに実装移行も行うことになった。
 
@@ -310,4 +369,34 @@ flowchart LR
 - モデル定義・クエリの書き方を全面的に書き換える一方、テーブル構造(カラム名・型・制約)・APIの入出力・ビジネスロジックは一切変更していない。既存のbackendテストスイート(98件)を無変更のまま実行し、全てgreenであることでこれを確認した
 - 単一行取得は`db.get(Model, id)`(主キー指定時)または`db.execute(select(...)).scalar_one_or_none()`(主キー以外の条件時)、複数行取得は`db.execute(select(...)).scalars().all()`に統一した。一括削除・一括更新(`db.query(...).delete()`/`.update()`相当)は`db.execute(delete(...))`/`db.execute(update(...))`に置き換えた
 - レビューエージェントが指摘した2点(規約書のスタイリング説明が実際の`className`+インライン`style`併用パターンを反映していなかった点、カスタムHookが`AuthContext.jsx`以外に`MainView.jsx`の`useQueryParamCallback`にも存在する点)は、実コードを再確認のうえ規約書に反映した。レート制限(`rate_limit.check_rate_limit`)への言及が抜けていた点も追加した
-- service/repository層の追加(router直書きからの責務分離)は、本プロジェクトの規模ではオーバーエンジニアリングと判断し、今回は見送った(`backend.md`末尾の「検討事項」として記録し、今後ルーターが肥大化した場合に再検討する)
+- service/repository層の追加はこの時点では見送った。その後の厳格レビューで、serviceへの分離を再利用回数や行数ではなく、トランザクション境界・ビジネスルール・外部サービス調整・テスト容易性から判断する規約へ改めた。repository層は引き続き必須としていない
+
+## 16. Argon2idへのパスワードハッシュ段階移行(2026-07-13)
+
+コーディング規約の厳格レビューで、OWASPが新規システムの第一候補としてArgon2idを推奨していること、bcryptには72バイト制限があることを確認した。新規登録・パスワードリセット・退会時の無効化用パスワードはArgon2idでハッシュし、既存DBに残るbcryptハッシュはログイン時のみ互換検証する。bcryptでの認証成功後、取得できた平文パスワードを使ってArgon2idへ再ハッシュし、DBへ保存する段階移行方式を採用した。認証失敗時はハッシュを書き換えない。
+
+| フェーズ | 追加・更新したドキュメント/実装 |
+|---|---|
+| 内部設計 | `02_module_design.md`(`auth.py`の責務をArgon2id新規ハッシュ、bcrypt互換検証、再ハッシュ判定へ更新) |
+| 規約 | `coding_conventions/backend.md`(Argon2idを標準化し、bcryptを既存ハッシュ検証専用に限定) |
+| 実装 | `backend/app/auth.py`(`PasswordHasher`、ハッシュ種別判定、`check_needs_rehash`)・`backend/app/routers/users.py`(ログイン成功時の再ハッシュ)・`backend/pyproject.toml`/`uv.lock`(`argon2-cffi`追加、bcryptは移行互換用に維持) |
+| テスト | `backend/tests/test_auth.py`(新規Argon2idハッシュ、bcryptログイン成功時の移行、認証失敗時に移行しないこと、古いArgon2パラメータの再ハッシュを検証) |
+
+- backendテスト101件が全て成功し、カバレッジ95.65%で70%ゲートを通過した。ruff lint/formatおよび`pip-audit`も成功した
+
+## 17. ドキュメント体系の業界標準ベース再監査(2026-07-13)
+
+ISO/IEC/IEEE 29148、ISO/IEC/IEEE 42010、ISO/IEC 25010、ISO/IEC/IEEE 29119-3、OpenAPI、C4、OWASP ASVS/Threat Modeling、NIST SSDF、WCAG、IPA非機能要求グレードを観点として、成果物種別と内容を再監査した。
+
+| 分類 | 主な変更 |
+|---|---|
+| 上位要求 | `00_system_requirements.md`を追加し、目的、境界、スコープ、制約、未決事項、要求出所を明確化 |
+| アーキテクチャ | Context/Container、デプロイ、セキュリティ/プライバシー/脅威モデル、ADRを追加 |
+| API | FastAPI生成OpenAPIを正本とし、54操作をCIで実装照合。欠落3 APIの補足仕様を追加 |
+| トレーサビリティ | 実装由来だった7 User Story、5機能を上流へ遡及し、全42機能を要求→画面/API→テストへ対応付け |
+| 非機能 | 測定条件、検証方法、適合状態、責任、本番化ゲートを追加。架空SLAを撤回 |
+| 検証・運用 | テスト計画、Runbook、監視、バックアップ/復元、リリース/DB migration設計を追加 |
+| 整合性 | 商品画像の概念エンティティ、モジュールのOpenAPI/logging責務、Stripe/SMTPの外部IFリスク、テーブル制約候補を修正 |
+| 継続検査 | docs-only変更を含むCIで`check_docs.py`を実行し、リンク、H1、US/UC/F一覧、API/OpenAPI件数、API上流IDを検査 |
+
+現段階で文書化は完了しているが、本番化ゲートの実装完了を意味しない。Stripe Webhook/冪等性、金額型、注文配送先snapshot、秘密管理、HTTPS、監視、復元、migration、性能、アクセシビリティ等は各文書で`未適合`または`未測定`として管理する。

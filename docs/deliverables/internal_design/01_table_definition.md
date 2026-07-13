@@ -1,9 +1,9 @@
 # テーブル定義書
 
 テンプレート: [[../../templates/internal_design/table_definition_template|docs/templates/internal_design/table_definition_template.md]]
-全体ルール: [[../../README|docs/README.md]](UML記法統一ルール(必須)を含む)
+全体ルール: [[../../README|docs/README.md]](図の記法選定ルールを含む)
 
-対象: `backend/app/models.py` に実装された全テーブル(SQLAlchemyモデル)。`04_conceptual_er.md`(概念クラス図)で扱ったエンティティに加え、実装上存在する補助テーブル(`product_images`)も含む。
+対象: `backend/app/models.py` に実装された全テーブル(SQLAlchemyモデル)。`04_conceptual_er.md`の概念エンティティを物理テーブルへ対応付ける。
 
 ## 1. 物理ER図(クラス図)
 
@@ -143,7 +143,7 @@ classDiagram
 
 ### product_images テーブル
 
-**元になったエンティティ**: `04_conceptual_er.md` には未記載(実装のみに存在する補助テーブル。商品ごとの複数画像を表現する)。管理者向け商品画像管理機能(F-022)で使用される。
+**元になったエンティティ**: PRODUCT_IMAGE(`04_conceptual_er.md`)。管理者向け画像管理(F-022)と顧客向け画像参照(F-040)で使用する。
 
 | カラム名 | 型 | PK/FK | NULL許可 | デフォルト | 説明 |
 |---|---|---|---|---|---|
@@ -174,7 +174,7 @@ classDiagram
 - インデックス: `email` に一意インデックス(`unique=True, index=True`)を実装で明示的に付与している。退会後は匿名化されたメールアドレス(`deleted-user-{id}@deleted.invalid`)に書き換わるため、一意制約に抵触せず同一メールアドレスでの再登録が可能になる
 - インデックス: `password_reset_token` にインデックス(`index=True`)を付与し、トークン検証時の検索を高速化する(2026-07-13追加)
 - インデックス: `email_verification_token` にインデックス(`index=True`)を付与し、トークン検証時の検索を高速化する(2026-07-13追加)
-- 本テーブルへのカラム追加は`Base.metadata.create_all`ベースで行っており、正式なマイグレーション(既存テーブルへの`ALTER TABLE`)は対象外(`06_nonfunctional_requirements.md`の移行性に関する既存の記載を参照)。新規に作成されるDBには反映されるが、既存の永続化されたDBファイルには自動反映されない点に留意
+- 現行は`Base.metadata.create_all`だけであり、既存テーブルへのschema変更は自動反映されない。永続データ運用前にversioned migrationを導入する(NFR-032、`operations/04_release_migration.md`)
 
 ### addresses テーブル
 
@@ -278,3 +278,7 @@ classDiagram
 ## 3. 改善提案(実装にないインデックス等)
 
 - `carts.user_id` / `orders.user_id` / `order_items.order_id` など、頻繁に絞り込み条件として使われる外部キー列には、現状インデックスが明示的に貼られていない。パフォーマンス改善の余地があるが、これは確定事項ではなく改善提案として本節に留める(テーブル定義表本体には含めない)。
+- `orders.stripe_payment_intent_id`に一意制約がなく、同じStripe決済から複数注文を作成できる。Webhook移行では外部event IDの処理台帳とPaymentIntent/Session IDの一意制約を追加する(NFR-030)。
+- `carts(user_id, product_id)`、`favorites(user_id, product_id)`、`reviews(user_id, product_id)`にDB一意制約がなく、アプリ側の事前確認だけでは並行要求時の重複を防げない。業務上の一意性として制約化を検討する。
+- 金額・割引値がFLOATであり、通貨計算の丸め・等価比較に不向きである。JPYの整数最小通貨単位または精度を定めたDECIMALへ移行し、変換・照合計画を作成する(CON-005)。
+- 配送先は注文へsnapshot保存されないため、注文時の宛先を後から再現できない。実配送を扱う前にORDER_ADDRESS等のsnapshotを設計する(TBD-006)。

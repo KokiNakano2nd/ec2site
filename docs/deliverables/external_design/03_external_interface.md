@@ -1,8 +1,10 @@
-## 連携先: Stripe (Checkout Session)
+# 外部インターフェース仕様
+
+## 1. 連携先: Stripe (Checkout Session)
 
 **概要**: クレジットカード決済をStripeに委任する。カード情報は自システムで保持しない(NFR-008)
 **公式ドキュメント**: https://stripe.com/docs/api/checkout/sessions(Stripe公式。詳細な項目・仕様変更はStripe公式ドキュメントを一次情報源とする)
-**連携方式**: REST API呼び出し(サーバー間通信、`backend/app/main.py`から`stripe`ライブラリ経由で呼び出し) + リダイレクト(顧客のブラウザをStripeの決済ページへ遷移させる)
+**連携方式(現行)**: REST API呼び出し(サーバー間通信、`backend/app/routers/payment.py`からStripe SDK経由) + リダイレクト(顧客のブラウザをStripeの決済ページへ遷移)
 **認証情報の扱い**: `STRIPE_SECRET_KEY`を環境変数で管理する。コード・リポジトリには値を含めない
 
 **元になったAPI仕様**: `POST /payment/checkout`, `POST /payment/complete`(`02_api_spec.md`)
@@ -41,12 +43,32 @@
 | 決済ステータスが`paid`でない | 400「支払いが完了していません」 |
 | `metadata.user_id`が現在のユーザーと不一致 | 403「アクセス権限がありません」 |
 
-### 現在の実装に関する注記
+現行実装はStripe例外の`str(e)`をAPIレスポンスへ含める。外部エラー詳細や内部識別子を顧客へ過剰開示する可能性があるため、本番化前に安定した内部エラーコードと一般化したメッセージへ置換し、詳細は機密情報を除去したサーバーログだけへ記録する。また、Stripe SDK呼び出しの明示タイムアウトは未実装(NFR-004)である。
+
+### 現行の決済確定経路とリスク
 
 - 現状のEC_SITE実装はWebhookを使用しない。顧客のブラウザが`success_url`にリダイレクトされ、フロントエンドがそのURLの`session_id`を使って`POST /payment/complete`を呼び出す方式(ブラウザ経由のリダイレクト+セッション照会方式)である
-- Webhookを導入する場合は、本ドキュメントに「エンドポイントURL」「署名検証の方式(Stripeの`Stripe-Signature`ヘッダー検証)」を追記すること
+- success redirectが到達しない、タブが閉じられる、同じ`session_id`が並行再送される場合に、支払済み未確定または重複注文となるリスクがある。現行はPaymentIntent IDの一意制約・イベント台帳・冪等キーを持たない
 
-## 連携先: SMTP(メール送信基盤)(2026-07-11追加)
+### 本番化目標: Stripe Webhook正経路
+
+次は承認済みの設計目標であり、未実装である。詳細なendpointと保存schemaは実装変更時にADR/API/テーブル設計へ反映する。
+
+| 項目 | 目標仕様 |
+|---|---|
+| endpoint | `POST /webhooks/stripe`等の認証不要専用endpoint。公開パスは実装時に確定 |
+| 対象event | 少なくとも`checkout.session.completed`。非同期決済方法を追加する場合は成功/失敗eventを追加 |
+| authenticity | raw request bodyと`Stripe-Signature`をWebhook signing secretで検証。Bearer/JWT認証で代替しない |
+| acknowledgement | 署名・受理可否を判定後、Stripe再試行を考慮して速やかに2xx/非2xxを返す。重い後続処理は分離を検討 |
+| idempotency | Stripe event IDをUNIQUEで記録し、処理済みeventは副作用を再実行せず2xxを返す |
+| order key | Checkout Session/PaymentIntent IDを注文または決済台帳で一意化する |
+| consistency | 注文・在庫・クーポン更新を1 DB transactionにまとめ、StripeとDBをまたぐ失敗は再試行/照合可能にする |
+| browser role | success pageは結果表示・状態pollingのみとし、注文確定の正経路にしない |
+| verification | 重複、順不同、遅延、署名不正、途中失敗、再試行をsandbox/結合テストする |
+
+Stripeはfulfillmentをlanding pageだけに依存せずWebhookで行うことを推奨している。公式: https://docs.stripe.com/checkout/fulfillment
+
+## 2. 連携先: SMTP(メール送信基盤)
 
 **概要**: 注文確認・注文ステータス変更を顧客に通知するメールを送信する(`04_notification_design.md`のN-001, N-002)
 **公式ドキュメント**: SMTP自体はRFC 5321(https://www.rfc-editor.org/rfc/rfc5321 )に準拠する標準プロトコルであり、特定の外部サービス固有の仕様ではない。実際の接続先(SMTPサーバー)は環境変数で切り替え可能なため、本番でどのメール配信サービス(例: SendGrid, AWS SES等)を使うかは未確定。使用サービスを確定した場合、当該サービスの公式ドキュメントへのリンクをここに追記すること
@@ -74,4 +96,6 @@
 ### 現在の実装に関する注記
 
 - Webhook/バウンス通知(配信不能メールの通知)には対応していない。送信の成否は自システム側のログでのみ把握でき、宛先メールアドレスが実在しない場合等の検知はできない
+- SMTP未設定時の標準出力には宛先、パスワードリセット/メール確認URLとトークンが含まれる。本番ではSMTP未設定を起動エラーとし、秘密トークンをログへ出さない。現行開発ログも共有前にマスクする
+- 明示的な接続/読取タイムアウト、再試行、送信キュー、delivery/bounce webhook、テンプレートのescaping方針は未実装である。本番化前にproviderを決定し、注文transactionとメール送信を分離した再送可能な方式を設計する
 - 本ドキュメントの「送信データ」節は`04_notification_design.md`(通知設計書)のN-001/N-002と一部重複するが、`04_notification_design.md`が「業務観点でどの通知が必要か」を定義するのに対し、本節は「外部連携(SMTPプロトコル)としてどう接続するか」を定義する、という役割分担とする

@@ -2,12 +2,14 @@
 
 対象ドキュメント: `docs/deliverables/external_design/02_api_spec.md`
 
-このファイルはAPI仕様書を作成する際の共通ルールをまとめたものです。`03_function_list.md`(機能一覧)の各機能に対応するエンドポイントを、実装(バックエンドのルーティング)に基づいて記述します。フォーマットはOpenAPIではなく**Markdownテーブル**を採用する(他の要件定義・外部設計ドキュメントとの記法の一貫性、差分レビューのしやすさを優先するため)。
+このファイルはAPI仕様書を作成する際の共通ルールをまとめたものです。APIのパス、パラメーター、スキーマ、認証方式、HTTPレスポンスの機械可読な正本は、FastAPIから生成する`docs/deliverables/external_design/openapi.json`とします。`02_api_spec.md`と`api_spec/`配下のMarkdownは、機能ID、業務上の意味、業務エラーなどOpenAPIだけでは伝えにくい情報を補足します。
 
 ## 1. 記法のベース
 
 - HTTPメソッドの意味づけ(GET/POST/PATCH/DELETE等)は **RFC 9110 (HTTP Semantics)** に準拠する
 - リソース指向のURL設計・ステータスコードの使い分けの考え方は **Roy Fielding, "Architectural Styles and the Design of Network-based Software Architectures"(REST)** に準拠する
+- API記述形式は **OpenAPI Specification 3.1** に準拠する
+- 実装変更時は`backend`で`uv run python scripts/export_openapi.py`を実行し、生成物を更新する。CIの`--check`により実装との不一致を検出する
 
 ## 2. 基本フォーマット
 
@@ -46,7 +48,9 @@
 ## 4. 記載ルール
 
 - リクエスト/レスポンスの項目は、実装(スキーマ定義)に存在するものだけを書く。将来追加予定の項目を先に書かない
-- エラーレスポンスは、実装で実際に返しているステータスコードとメッセージをそのまま転記する(架空のエラーメッセージを作らない)
+- 型、必須性、標準の422レスポンスはOpenAPIを参照し、Markdownへ重複転記しない
+- Markdownのエラーレスポンス欄には、エンドポイント固有の業務エラーのみを書く。共通の401/403/422は`02_api_spec.md`の共通レスポンス定義を参照する
+- エラーレスポンスは、実装で実際に返しているステータスコードとメッセージを記載する(架空のエラーメッセージを作らない)
 - 認証が必要なエンドポイントは「認証」欄に明記する。管理者権限が必要な場合は「認証: 必要(管理者)」とする
 
 ## 5. 後続ドキュメントへの接続
@@ -65,3 +69,5 @@
   - HTTPメソッド・ステータスコードの意味づけの出典
 - Roy Fielding, "Architectural Styles and the Design of Network-based Software Architectures" (博士論文, 2000) — https://ics.uci.edu/~fielding/pubs/dissertation/top.htm
   - REST(リソース指向のURL設計)の原典
+- OpenAPI Initiative, "OpenAPI Specification" — https://spec.openapis.org/oas/latest.html
+  - HTTP APIの機械可読なインターフェース記述形式
