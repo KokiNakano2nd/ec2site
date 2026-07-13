@@ -282,3 +282,16 @@ flowchart LR
 - CodeQL(GitHub Code Scanningのデフォルトセットアップ)を有効化した。ワークフローファイルの追加ではなくリポジトリ設定側の機能のため、`.github/workflows/`には対応するファイルが存在しない
 - CD(実際のホスティングへの自動デプロイ)は本改善のスコープ外とした。デプロイ先が未決定であり、Stripe Webhookに必要な公開HTTPSエンドポイントとDB永続化を伴うホスティング選定は別途の意思決定が必要なため、着手する場合は本項とは別に要求定義から立てる
 - Docker build検証(CI上での`docker build`)・イメージスキャン(Trivy)・Playwright E2EのCI組み込みは、調査の結果「価値はあるが今回のスコープ外」と判断し見送った。将来着手する場合の参考情報は本セッションの検討記録(調査エージェントの報告)を参照
+
+## 14. `passlib`廃止によるパスワードハッシュ化ロジックの根本修正(2026-07-13)
+
+上記§13のCI/CD整備後、Dependabotが提案したpip依存関係の一括更新PR(bcrypt 4→5等)を検証した際、`passlib==1.7.4`(2020年以降メンテナンスが止まっているライブラリ)が`bcrypt>=4.1`で削除された`bcrypt.__about__.__version__`属性を参照しており、`bcrypt`を5系に上げると全てのパスワードハッシュ化・検証が例外を送出して機能しなくなることが判明した。当初は`bcrypt==4.0.1`への固定と、Dependabotの`ignore`ルールで回避する対症療法を取ったが、根本原因(`passlib`自体の非互換体質)は解消されていなかったため、認証ロジックを`passlib`非依存に書き換える追加対応を行った。
+
+| フェーズ | 追加・更新したドキュメント |
+|---|---|
+| 内部設計 | `02_module_design.md`(`auth.py`の説明を「`passlib`」→「`bcrypt`を直接使用」に更新) |
+| 実装 | `backend/app/auth.py`(`passlib.context.CryptContext`を廃止し、`bcrypt.hashpw`/`bcrypt.checkpw`を直接呼び出す実装に変更)、`backend/pyproject.toml`(`passlib[bcrypt]`を削除、`bcrypt`のピン留めを解除し`bcrypt>=4.1`に緩和)、`backend/uv.lock`(再生成、`bcrypt`は5.0.0へ)、`.github/dependabot.yml`(不要になった`bcrypt>=4.1`の`ignore`ルールを削除) |
+
+- 影響範囲は`backend/app/auth.py`の`hash_password`/`verify_password`の2関数のみで、呼び出し側(`routers/users.py`等)はシグネチャ不変のため変更不要だった
+- `passlib`の`CryptContext(deprecated="auto")`が提供していた「将来的なハッシュ方式の移行」機能は使わなくなったが、本プロジェクトはbcrypt以外のハッシュ方式への移行予定がないため実質的な機能低下はないと判断した
+- 変更後、backendテストスイート(98件、既存の認証・パスワードハッシュ化系テストを含む)が全てgreenであることを確認し、`ruff`・`pip-audit`も合わせて再実行して問題がないことを確認した

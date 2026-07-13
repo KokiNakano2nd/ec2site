@@ -115,7 +115,7 @@ classDiagram
 - **`services/order_actions.py`**(2026-07-13追加): `calculate_subtotal`(カート小計計算)・`fulfill_order`(カートから注文を確定し、在庫減算・クーポン使用数加算・注文確認メール送信までを行う)・`reverse_order`(注文取消/返品承認時に、Stripe返金・在庫復元・クーポン使用数減算を行う)を提供する。`routers/orders.py`(注文作成・キャンセル)・`routers/payment.py`(Stripe決済完了時の注文確定)・`routers/admin_orders.py`(返品承認時の巻き戻し)で重複していたロジックを集約したもの。`models`・`email_utils`・`stripe_client`に依存する。
 - **`models.py`**: SQLAlchemyモデル定義(`Product`, `ProductImage`, `User`, `Address`, `Cart`, `Coupon`, `Order`, `OrderItem`, `Favorite`, `Review`)。`01_table_definition.md`の物理テーブル定義の実体。
 - **`schemas.py`**: Pydanticスキーマ定義。APIリクエスト/レスポンスの型を定義する(`ProductOut`, `OrderCreate`, `OrderOut` 等)。他の自作モジュールに依存しない。
-- **`auth.py`**: JWT認証(トークン発行・検証)、パスワードハッシュ化(`passlib`)、`get_current_user`等の依存性注入関数を提供する。`models`・`database`に依存する。
+- **`auth.py`**: JWT認証(トークン発行・検証)、パスワードハッシュ化(`bcrypt`を直接使用)、`get_current_user`等の依存性注入関数を提供する。`models`・`database`に依存する。
 - **`email_utils.py`**: 注文確認メール(`send_order_confirmation`)・状態通知メール(`send_status_notification`)・退会完了通知メール(`send_account_deletion_email`)・返品却下通知メール(`send_return_rejected_email`)・パスワードリセットメール(`send_password_reset_email`、2026-07-13追加)・メールアドレス確認メール(`send_verification_email`、2026-07-13追加)の送信。`SMTP_HOST`未設定時はコンソール出力にフォールバックする(開発時モード)。他の自作モジュールに依存しない。
 - **`database.py`**: SQLAlchemyエンジン・セッション(`get_db`)・`Base`(モデルの基底クラス)を初期化する。他の自作モジュールに依存しない。
 - **`rate_limit.py`**(2026-07-13追加): ログイン・会員登録エンドポイントへのレート制限(NFR-022)。プロセス内メモリの固定ウィンドウカウンタ(キー: IPアドレス+エンドポイント種別)で実装し、外部ストア(Redis等)には依存しない。他の自作モジュールに依存しない。
