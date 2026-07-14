@@ -147,6 +147,39 @@ def test_admin_resolve_return_wrong_status_returns_400(client, auth_headers, adm
     assert res.status_code == 400
 
 
+def test_admin_status_update_rejects_unknown_status(client, auth_headers, admin_headers):
+    product_id, _ = _first_product_id(client, auth_headers)
+    order = create_order_for_user(client, auth_headers, product_id)
+
+    res = client.patch(
+        f"/admin/orders/{order['id']}/status",
+        json={"status": "invented"},
+        headers=admin_headers,
+    )
+
+    assert res.status_code == 400
+    assert res.json()["detail"] == "無効な注文ステータスです"
+
+
+def test_admin_status_update_rejects_invalid_transition(client, auth_headers, admin_headers):
+    product_id, _ = _first_product_id(client, auth_headers)
+    order = create_order_for_user(client, auth_headers, product_id)
+    client.patch(
+        f"/admin/orders/{order['id']}/status",
+        json={"status": "shipped"},
+        headers=admin_headers,
+    )
+
+    res = client.patch(
+        f"/admin/orders/{order['id']}/status",
+        json={"status": "processing"},
+        headers=admin_headers,
+    )
+
+    assert res.status_code == 400
+    assert res.json()["detail"] == "許可されていない注文ステータス遷移です"
+
+
 def test_admin_resolve_return_requires_admin(client, auth_headers):
     product_id, _ = _first_product_id(client, auth_headers)
     order = create_order_for_user(client, auth_headers, product_id)

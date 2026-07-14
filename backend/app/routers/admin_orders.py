@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 
 from .. import auth, email_utils, models, schemas
 from ..database import get_db
-from ..services.order_actions import reverse_order
+from ..services.order_actions import RefundError, reverse_order
+from ..services.order_status import InvalidOrderStatusError, InvalidOrderTransitionError, update_order_status
 
 router = APIRouter()
 
@@ -28,7 +29,10 @@ def admin_resolve_return(
     if action_in.action == "reject":
         order.status = "shipped"
     else:
-        reverse_order(db, order)
+        try:
+            reverse_order(db, order)
+        except RefundError as error:
+            raise HTTPException(status_code=500, detail="返金処理に失敗しました") from error
         order.status = "returned"
 
     db.commit()
@@ -54,7 +58,12 @@ def admin_update_order_status(
     order = db.get(models.Order, order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="注文が見つかりません")
-    order.status = status_in.status
+    try:
+        update_order_status(order, status_in.status)
+    except InvalidOrderStatusError as error:
+        raise HTTPException(status_code=400, detail="無効な注文ステータスです") from error
+    except InvalidOrderTransitionError as error:
+        raise HTTPException(status_code=400, detail="許可されていない注文ステータス遷移です") from error
     db.commit()
     db.refresh(order)
 

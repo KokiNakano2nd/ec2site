@@ -2,18 +2,18 @@
 
 ## 1. 適用範囲
 
-現時点で実行可能なのはローカルDocker Compose環境だけである。本書前半はローカル環境の実手順、後半はproduction導入時に埋める運用ゲートを扱う。存在しない監視基盤、オンコール体制、クラウド操作を実装済みとは記載しない。
+現時点で実行可能なのはLinux/WSL上のローカル環境である。本書前半はローカル環境の実手順、後半はproduction導入時に埋める運用ゲートを扱う。存在しない監視基盤、オンコール体制、クラウド操作を実装済みとは記載しない。
 
 ## 2. ローカル起動・停止
 
 ### 起動前確認
 
 1. 作業ディレクトリがリポジトリルートであることを確認する
-2. `docker-compose.yml`が開発用シークレット、bind mount、reloadを使うことを理解し、外部公開しない
+2. 初回は`make bootstrap`を実行し、`.tools/`と`.env`を準備する
 3. Stripe/SMTPを利用する場合は秘密をリポジトリやshell履歴へ直接書かず、ローカル専用の安全な方法で注入する
 
 ```bash
-docker compose up --build
+make dev
 ```
 
 期待結果:
@@ -26,20 +26,14 @@ docker compose up --build
 
 ### 停止
 
-通常停止は`Ctrl+C`後に次を実行する。
-
-```bash
-docker compose down
-```
-
-`docker compose down -v`やDBファイル削除はデータ消失につながるため、本Runbookの通常停止では使用しない。
+通常停止は`Ctrl+C`を使用する。`make dev`はbackend/frontendの子プロセスを終了する。DBファイル削除はデータ消失につながるため、通常停止では行わない。
 
 ## 3. 開発環境の基本診断
 
 | 症状 | 確認 | 判断・次の対応 |
 |---|---|---|
-| frontendが開かない | frontend containerログ、5174 port競合 | build/依存/portを確認。DB操作はしない |
-| APIが応答しない | backend containerログ、8001 port、`/openapi.json` | import/config/portを確認 |
+| frontendが開かない | frontend terminal出力、5174 port競合 | build/依存/portを確認。DB操作はしない |
+| APIが応答しない | backend terminal出力、8001 port、`/openapi.json` | import/config/portを確認 |
 | 500が返る | traceback、直前操作、DBファイル権限 | 再現手順を保存し、安易にDBを初期化しない |
 | ログイン不可 | `/auth/login`のstatus、429、ユーザー状態 | レート制限、資格情報、`is_active`を区別 |
 | Stripe不可 | `/config`、キー設定、Stripe例外ログ | 未設定と外部障害を区別。カードなし注文への影響を確認 |

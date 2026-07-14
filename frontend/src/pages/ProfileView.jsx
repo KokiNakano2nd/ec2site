@@ -33,7 +33,14 @@ export function ProfileView({ showToast, onAccountDeleted }) {
   }
 
   useEffect(() => {
-    if (token) fetchAddresses(token).then(setAddresses).catch(() => {});
+    if (!token) return;
+    const controller = new AbortController();
+    fetchAddresses(token, { signal: controller.signal })
+      .then(setAddresses)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      });
+    return () => controller.abort();
   }, [token]);
 
   async function handleCreate(e) {

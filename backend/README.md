@@ -2,16 +2,16 @@
 
 ## セットアップ
 
-依存管理は[uv](https://docs.astral.sh/uv/)を使用する(`pyproject.toml` + `uv.lock`)。
+依存管理は[uv](https://docs.astral.sh/uv/)を使用する(`pyproject.toml` + `uv.lock`)。リポジトリルートで`make bootstrap`を実行すると、固定版uvとPython 3.12.13を`.tools/`へ導入して依存を同期する。
 
 ```bash
-uv sync
+make bootstrap
 ```
 
 ## テスト実行
 
 ```bash
-uv run pytest
+make test
 ```
 
 - `pytest.ini`でカバレッジ70%未満の場合は失敗するよう設定している(`--cov-fail-under=70`)。
@@ -22,12 +22,11 @@ uv run pytest
 ## Lint
 
 ```bash
-uv run ruff check .
-uv run ruff format --check .
+make lint
 ```
 
 ## 依存脆弱性チェック
 
 ```bash
-uv run pip-audit
+make check
 ```

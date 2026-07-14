@@ -3,16 +3,21 @@ import tempfile
 from pathlib import Path
 
 _tmp_dir = tempfile.TemporaryDirectory()
+os.environ["APP_ENV"] = "test"
 os.environ["DATABASE_URL"] = f"sqlite:///{Path(_tmp_dir.name) / 'test.db'}"
-os.environ.setdefault("STRIPE_SECRET_KEY", "")
-os.environ.setdefault("SMTP_HOST", "")
+os.environ["SECRET_KEY"] = "test-secret-key-not-for-production-only"
+os.environ.pop("STRIPE_ENABLED", None)
+os.environ["STRIPE_SECRET_KEY"] = ""
+os.environ["SMTP_HOST"] = ""
+os.environ["EMAIL_DELIVERY"] = "console"
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app import rate_limit
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
 from app.main import app
+from app.seed import seed_initial_data
 
 TEST_PASSWORD = "password123"
 
@@ -21,6 +26,8 @@ TEST_PASSWORD = "password123"
 def _reset_db():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        seed_initial_data(db)
     rate_limit.reset()
     yield
     Base.metadata.drop_all(bind=engine)
@@ -56,7 +63,7 @@ def other_user_headers(client):
 
 @pytest.fixture
 def admin_headers(client):
-    # app.main.seed_admin() creates this account on startup.
+    # The test fixture seeds this test-only account.
     res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin12345"})
     return {"Authorization": f"Bearer {res.json()['access_token']}"}
 

@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
-export async function fetchFavorites(token) {
-  return apiFetch("/favorites", { token, errorMessage: "お気に入りの取得に失敗しました" });
+export async function fetchFavorites(token, { signal } = {}) {
+  return apiFetch("/favorites", { token, signal, errorMessage: "お気に入りの取得に失敗しました" });
 }
 
 export async function addFavorite(token, productId) {

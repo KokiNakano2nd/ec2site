@@ -30,6 +30,7 @@ flowchart LR
         X1["01_architecture_overview.md"]
         X2["02_deployment_design.md"]
         X3["03_security_privacy_design.md / ADR"]
+        X4["04_development_environment_tobe.md"]
     end
     subgraph external_design["外部設計"]
         C1["01_screen_design.md"]
@@ -81,6 +82,11 @@ flowchart LR
     B5 --> X3
     X1 --> X2
     X1 --> X3
+    B0 --> X4
+    B5 --> X4
+    X2 --> X4
+    X3 --> X4
+    V2 --> X4
     B2 --> V1
     C1 --> V1
     C2 --> V1
@@ -124,6 +130,7 @@ flowchart LR
 | アーキテクチャ | `architecture/01_architecture_overview.md` | システム要求、ステークホルダー、実装構成 | Context/Container、関心事、決定・リスクを整理する |
 | アーキテクチャ | `architecture/02_deployment_design.md` | システム要求、アーキテクチャ、NFR、実装構成 | 環境、構成値、本番化ゲートを定義する |
 | アーキテクチャ | `architecture/03_security_privacy_design.md` | システム要求、NFR、データ/外部IF、実装 | DFD、脅威、制御、個人データを整理する |
+| アーキテクチャ | `architecture/04_development_environment_tobe.md` | システム要求、NFR、デプロイ、セキュリティ、テスト計画、実装監査 | 再現可能な開発環境、品質ゲート、段階的な整備方針を定義する |
 | 運用 | `operations/01_operations_runbook.md` | デプロイ、エラー設計、監視 | 起動・診断・インシデント初動を定義する |
 | 運用 | `operations/02_monitoring_alerting.md` | NFR、エラー/ログ、デプロイ | SLI、アラート、通知・演習を定義する |
 | 運用 | `operations/03_backup_restore.md` | NFR、DB/デプロイ、テスト計画 | RPO/RTO、対象、復元演習を定義する |
@@ -173,6 +180,7 @@ flowchart LR
 | architecture | `architecture_overview_template.md` | `01_architecture_overview.md` |
 | architecture | `deployment_design_template.md` | `02_deployment_design.md` |
 | architecture | `security_privacy_design_template.md` | `03_security_privacy_design.md` |
+| architecture | `development_environment_tobe_template.md` | `04_development_environment_tobe.md` |
 | architecture | `adr_template.md` | `adr/ADR-*.md` |
 | external_design | `screen_design_template.md` | `01_screen_design.md` |
 | external_design | `api_spec_template.md` | `openapi.json`(機械可読な正本), `02_api_spec.md`/`api_spec/*.md`(業務上の補足) |
@@ -331,14 +339,14 @@ flowchart LR
 | フェーズ | 追加・更新したドキュメント |
 |---|---|
 | 要件定義 | `06_nonfunctional_requirements.md`(NFR-024: CIによる静的解析、NFR-025: 依存関係の脆弱性対策を新規追加) |
-| 実装 | `.github/workflows/ci.yml`(uv移行・ruff・pip-audit・ESLint・`permissions`・`concurrency`・`paths-ignore`を追加)、`.github/dependabot.yml`(新規)、`backend/pyproject.toml`(新規、`requirements.txt`/`requirements-dev.txt`を置き換え)、`backend/Dockerfile`(uvベースに変更)、`frontend/eslint.config.js`(新規)、`README.md`(新規、CIバッジ追加)、`backend/README.md`・`frontend/README.md`(uv/lint手順を追記) |
+| 実装 | `.github/workflows/ci.yml`(uv移行・ruff・pip-audit・ESLint・`permissions`・`concurrency`・`paths-ignore`を追加)、`.github/dependabot.yml`(新規)、`backend/pyproject.toml`(新規、`requirements.txt`/`requirements-dev.txt`を置き換え)、`frontend/eslint.config.js`(新規)、`README.md`(新規、CIバッジ追加)、`backend/README.md`・`frontend/README.md`(uv/lint手順を追記) |
 
 - backendの依存管理を`pip`から[uv](https://docs.astral.sh/uv/)へ移行した。CIでのインストール高速化に加え、`uv.lock`によるロックファイル管理を学習する目的も兼ねる
 - 依存脆弱性チェック(`pip-audit`)導入にあたり、既知の脆弱性のうち修正版が存在するもの(`fastapi`・`python-jose`・`python-multipart`・`pytest`)は互換性のある範囲でバージョンを上げて解消した。`ecdsa`(`python-jose`の依存先)のPYSEC-2026-1325は、pure-Pythonの ECDSA実装に起因するタイミング攻撃で、上流に修正版が存在しないため、CIでは個別に許可リスト化(`--ignore-vuln`)して対応した。他の脆弱性が新たに検知された場合はCIが失敗する
 - `eslint-plugin-react-hooks`はv7でReact Compiler向けの新ルールセット(`static-components`・`set-state-in-effect`等)が「推奨」設定に含まれるようになったが、本プロジェクトはReact 18でCompiler未導入のため、これらのルールは既存の正当なデータフェッチパターン(`useEffect`内での`setState`等)を誤検知する。そのため、従来からある`rules-of-hooks`・`exhaustive-deps`のみを有効化する設定とした
 - CodeQL(GitHub Code Scanningのデフォルトセットアップ)を有効化した。ワークフローファイルの追加ではなくリポジトリ設定側の機能のため、`.github/workflows/`には対応するファイルが存在しない
 - CD(実際のホスティングへの自動デプロイ)は本改善のスコープ外とした。デプロイ先が未決定であり、Stripe Webhookに必要な公開HTTPSエンドポイントとDB永続化を伴うホスティング選定は別途の意思決定が必要なため、着手する場合は本項とは別に要求定義から立てる
-- Docker build検証(CI上での`docker build`)・イメージスキャン(Trivy)・Playwright E2EのCI組み込みは、調査の結果「価値はあるが今回のスコープ外」と判断し見送った。将来着手する場合の参考情報は本セッションの検討記録(調査エージェントの報告)を参照
+- Playwright E2EのCI組み込みは、調査の結果「価値はあるが今回のスコープ外」と判断し見送った。将来着手する場合の参考情報は本セッションの検討記録(調査エージェントの報告)を参照
 
 ## 14. `passlib`廃止によるパスワードハッシュ化ロジックの根本修正(2026-07-13)
 

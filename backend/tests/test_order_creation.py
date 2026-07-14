@@ -57,6 +57,29 @@ def test_create_order_with_invalid_coupon_returns_400(client, auth_headers):
     assert res.status_code == 400
 
 
+def test_create_order_with_invalid_coupon_leaves_checkout_state_unchanged(client, auth_headers):
+    product = _first_product(client, auth_headers)
+    add_res = client.post(
+        "/cart",
+        json={"product_id": product["id"], "quantity": 2},
+        headers=auth_headers,
+    )
+    assert add_res.status_code == 201
+
+    res = client.post("/orders", json={"coupon_code": "NOTREAL"}, headers=auth_headers)
+    assert res.status_code == 400
+
+    product_after = client.get(f"/products/{product['id']}", headers=auth_headers).json()
+    assert product_after["stock"] == product["stock"]
+
+    cart_after = client.get("/cart", headers=auth_headers).json()
+    assert len(cart_after) == 1
+    assert cart_after[0]["quantity"] == 2
+
+    orders_after = client.get("/orders", headers=auth_headers).json()
+    assert orders_after == []
+
+
 def test_create_order_with_exhausted_coupon_returns_400(client, auth_headers, other_user_headers, admin_headers):
     client.post(
         "/admin/coupons",
@@ -72,6 +95,10 @@ def test_create_order_with_exhausted_coupon_returns_400(client, auth_headers, ot
     client.post("/cart", json={"product_id": product["id"], "quantity": 1}, headers=other_user_headers)
     second = client.post("/orders", json={"coupon_code": "ONEUSE"}, headers=other_user_headers)
     assert second.status_code == 400
+
+    coupons = client.get("/admin/coupons", headers=admin_headers).json()
+    coupon = next(coupon for coupon in coupons if coupon["code"] == "ONEUSE")
+    assert coupon["used_count"] == 1
 
 
 def test_list_orders_returns_only_own_orders(client, auth_headers, other_user_headers):

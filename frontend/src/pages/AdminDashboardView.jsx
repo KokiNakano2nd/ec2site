@@ -7,6 +7,7 @@ import { fetchAnalyticsSummary, fetchCategorySales, fetchSalesByDate, fetchTopPr
 import { fetchLowStockProducts } from "../api/admin";
 import { fetchLowRemainingUsesCoupons } from "../api/coupons";
 import { useAuth } from "../AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { C, CHART_COLORS } from "../lib/constants";
 import { fmt } from "../lib/format";
 
@@ -19,8 +20,11 @@ export function AdminDashboardView() {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [lowRemainingUsesCoupons, setLowRemainingUsesCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let active = true;
+    setError(null);
     Promise.all([
       fetchAnalyticsSummary(token),
       fetchSalesByDate(token, 30),
@@ -29,13 +33,19 @@ export function AdminDashboardView() {
       fetchLowStockProducts(token),
       fetchLowRemainingUsesCoupons(token),
     ]).then(([s, d, p, c, lowStock, lowRemainingCoupons]) => {
+      if (!active) return;
       setSummary(s);
       setSalesByDate(d);
       setTopProducts(p);
       setCategorySales(c);
       setLowStockProducts(lowStock);
       setLowRemainingUsesCoupons(lowRemainingCoupons);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((requestError) => {
+      if (active) setError(requestError.message);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
   }, [token]);
 
   const KpiCard = ({ label, value, sub, accent }) => (
@@ -58,6 +68,8 @@ export function AdminDashboardView() {
       </div>
     </div>
   );
+
+  if (error) return <ErrorBanner>{error}</ErrorBanner>;
 
   const noData = salesByDate.length === 0 && topProducts.length === 0;
 

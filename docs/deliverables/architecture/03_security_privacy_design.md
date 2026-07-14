@@ -49,9 +49,9 @@ flowchart LR
 | レート制限 | login/registerをIP単位固定窓で制限 | 部分実装 | `tests/test_rate_limit.py` |
 | 入力検証 | Pydanticと一部業務チェック | 部分実装 | APIテスト/OpenAPI |
 | 決済情報 | カード情報を保持せずStripe Checkoutへ委任 | 実装済み | Stripeテスト |
-| 依存関係 | lockfile、Dependabot、pip-audit、CodeQL | 実装済み | CI |
+| 依存関係 | lockfile、Dependabot、pip-audit、CodeQL、Gitleaks | 実装済み(CI実行結果は要確認) | CI |
 | 通信 | 要求はHTTPS/STARTTLS。ローカルHTTP | 本番未実装 | デプロイ設計 |
-| シークレット | 環境変数読込 | 部分実装 | 本番fail-closedなし |
+| シークレット | root `.env`/実行環境から注入し、production必須値・機能有効時の資格情報を起動時検査 | 部分実装 | `tests/test_config.py`、Secret Manager未定 |
 | ログ | Stripe/SMTP/返金/レート制限を記録 | 部分実装 | 構造化・保持・マスキングなし |
 
 ## 5. 認証・セッション設計
@@ -93,9 +93,9 @@ IDOR対策として、顧客所有リソースはIDだけで取得せず`user_id
 | 脅威ID | 分類 | シナリオ | 影響 | 現行対策 | 状態/必要対策 |
 |---|---|---|---|---|---|
 | THR-001 | 情報漏えい | XSSでlocalStorage JWTを窃取 | なりすまし | React既定escape | 高・保存方式/CSPを要決定 |
-| THR-002 | なりすまし | 既定SECRET_KEYでJWTを偽造 | 全権限奪取 | 環境変数上書き可能 | 重大・本番fail-closed必須 |
+| THR-002 | なりすまし | 既定SECRET_KEYでJWTを偽造 | 全権限奪取 | productionは明示設定・32文字以上を起動時検査 | 低減・Secret Manager導入は本番化ゲート |
 | THR-003 | 情報漏えい | DBから平文リセット/確認トークンを取得 | アカウント奪取 | 有効期限・単回使用 | 高・ダイジェスト保存へ移行 |
-| THR-004 | 情報漏えい | SMTP未設定時に本文・リンクを標準出力 | トークン/個人情報漏えい | 開発用fallback | 高・本番禁止、環境モード分離 |
+| THR-004 | 情報漏えい | SMTP未設定時に本文・リンクを標準出力 | トークン/個人情報漏えい | `EMAIL_DELIVERY`を環境別に検査しproductionのconsoleを拒否 | 低減・本番SMTP/通知基盤は未決定 |
 | THR-005 | サービス拒否/認証突破 | 複数IP・複数workerでレート制限回避 | 総当たり | プロセス内IP制限 | 中・共有ストア/段階的制限 |
 | THR-006 | 改ざん | ブラウザredirectを完了せず/再送し決済と注文を不整合化 | 金銭・注文不整合 | Session照会・user_id照合 | 重大・署名Webhook/冪等性 |
 | THR-007 | 改ざん | 同時注文で在庫・クーポン上限を競合 | 過販売・過剰割引 | アプリ事前チェック | 高・条件付き更新/ロック/制約 |

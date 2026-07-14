@@ -38,8 +38,8 @@
 | 状況 | 自システムの挙動 |
 |---|---|
 | Stripe未設定(`STRIPE_SECRET_KEY`未設定) | 400「Stripeが設定されていません」 |
-| Session作成時にStripe側でエラー | 500「Stripe エラー: {詳細}」(`str(e)`をそのまま含める) |
-| Session取得(照会)時にStripe側でエラー | 400「セッション取得失敗: {詳細}」 |
+| Session作成時にStripe側でエラー | 502「決済サービスとの通信に失敗しました」 |
+| Session取得(照会)時にStripe側でエラー | 400「決済セッションを確認できませんでした」 |
 | 決済ステータスが`paid`でない | 400「支払いが完了していません」 |
 | `metadata.user_id`が現在のユーザーと不一致 | 403「アクセス権限がありません」 |
 
@@ -48,7 +48,7 @@
 ### 現行の決済確定経路とリスク
 
 - 現状のEC_SITE実装はWebhookを使用しない。顧客のブラウザが`success_url`にリダイレクトされ、フロントエンドがそのURLの`session_id`を使って`POST /payment/complete`を呼び出す方式(ブラウザ経由のリダイレクト+セッション照会方式)である
-- success redirectが到達しない、タブが閉じられる、同じ`session_id`が並行再送される場合に、支払済み未確定または重複注文となるリスクがある。現行はPaymentIntent IDの一意制約・イベント台帳・冪等キーを持たない
+- success redirectが到達しない、タブが閉じられる場合は支払済み未確定となるリスクが残る。同じPaymentIntentの逐次再送は既存注文を返す。新規DBには一意制約があるが既存DBへのmigrationとWebhookイベント台帳は未実装であり、同時要求の完全な冪等性は保証しない
 
 ### 本番化目標: Stripe Webhook正経路
 

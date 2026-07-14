@@ -57,7 +57,16 @@ export function MainView() {
 
   useEffect(() => {
     if (!token) { setFavItems([]); return; }
-    fetchFavorites(token).then(setFavItems).catch(() => {});
+    const controller = new AbortController();
+    fetchFavorites(token, { signal: controller.signal })
+      .then(setFavItems)
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+        setToast(error.message);
+        clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(null), 3000);
+      });
+    return () => controller.abort();
   }, [token]);
 
   useQueryParamCallback("payment", {
@@ -83,7 +92,7 @@ export function MainView() {
     } else {
       await addFavorite(token, productId);
       setFavItems((prev) => [...prev, { id: Date.now(), product: { id: productId } }]);
-      fetchFavorites(token).then(setFavItems).catch(() => {});
+      fetchFavorites(token).then(setFavItems).catch((error) => showToast(error.message));
     }
   }
 

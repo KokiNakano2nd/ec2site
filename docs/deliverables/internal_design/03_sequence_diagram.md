@@ -14,38 +14,38 @@ sequenceDiagram
     actor 顧客
     participant Frontend as フロントエンド(CartView)
     participant API as routers/orders.py(/orders)
-    participant Service as services/order_actions.py(fulfill_order)
+    participant Service as services/checkout.py(place_order)
     participant DB as DB(carts, coupons, orders, order_items, products)
     participant Mail as email_utils(send_order_confirmation)
 
     顧客->>Frontend: 「注文を確定する」ボタン押下
     Frontend->>API: POST /orders (coupon_code)
-    API->>DB: カート内商品を取得(carts)
-    DB-->>API: カート内商品一覧
+    API->>Service: place_order(user, coupon_code, status="pending")
+    Service->>DB: カート内商品を取得(carts)
+    DB-->>Service: カート内商品一覧
 
     alt カートが空
         API-->>Frontend: 400「カートが空です」
     else カートに商品あり
-        API->>API: 各商品の在庫チェック(quantity > product.stock)
+        Service->>Service: 各商品の在庫チェック(quantity > product.stock)
         alt 在庫不足の商品あり
             API-->>Frontend: 400「{商品名}の在庫数が不足しています」
         else 在庫あり
             opt クーポンコード指定あり
-                API->>DB: クーポンを取得(coupons)
-                DB-->>API: クーポン or なし
+                Service->>DB: クーポンを取得(coupons)
+                DB-->>Service: クーポン or なし
                 alt クーポンが存在しない
                     API-->>Frontend: 400「無効なクーポンコードです」
                 else 使用回数上限に到達
                     API-->>Frontend: 400「このクーポンは使用回数の上限に達しています」
                 end
             end
-            API->>API: 小計・割引額・税(10%)・合計金額を計算
-            API->>Service: fulfill_order(user, cart_items, total_price, discount_amount, coupon_code, status="pending", applied_coupon)
+            Service->>Service: 小計・割引額・税(10%)・合計金額を計算
             Service->>DB: Order・OrderItemを作成、在庫を減算、カートを削除、クーポン使用回数を加算
             DB-->>Service: コミット完了(status="pending")
-            Service->>Mail: send_order_confirmation(注文情報)
-            Mail-->>Service: 送信完了(またはログ出力のみ)
             Service-->>API: Order
+            API->>Mail: send_order_confirmation(注文情報)
+            Mail-->>API: 送信完了(またはログ出力のみ)
             API-->>Frontend: 201 OrderOut
             Frontend->>顧客: 注文完了を表示
         end
@@ -78,14 +78,14 @@ sequenceDiagram
             API-->>Frontend: 400「カートが空です」
         else カートに商品あり
             opt クーポンコード指定あり
-                API->>DB: クーポンを取得(coupons、無効なコードは無視して割引なしのまま続行)
+                API->>DB: 共通checkout serviceでクーポンを検証する
                 DB-->>API: クーポン or なし
             end
             API->>API: 小計・割引額・税込金額(int変換)を計算
             API->>Stripe: checkout.Session.create(line_items, metadata.user_id, metadata.coupon_code, success_url, cancel_url, customer_email)
             alt Stripe API呼び出し失敗
                 Stripe-->>API: Exception
-                API-->>Frontend: 500「Stripe エラー: {詳細}」
+                API-->>Frontend: 502「決済サービスとの通信に失敗しました」
             else 作成成功
                 Stripe-->>API: session.url
                 API-->>Frontend: {session_url}
@@ -105,7 +105,7 @@ sequenceDiagram
     participant Frontend as フロントエンド(MainView.jsx)
     participant API as routers/payment.py(/payment/complete)
     participant Stripe
-    participant Service as services/order_actions.py(fulfill_order)
+    participant Service as services/checkout.py(place_order)
     participant DB as DB(carts, coupons, orders, order_items, products)
     participant Mail as email_utils(send_order_confirmation)
 
@@ -115,7 +115,7 @@ sequenceDiagram
     API->>Stripe: checkout.Session.retrieve(session_id)
     alt Stripe API呼び出し失敗
         Stripe-->>API: Exception
-        API-->>Frontend: 400「セッション取得失敗: {詳細}」
+        API-->>Frontend: 400「決済セッションを確認できませんでした」
     else 取得成功
         Stripe-->>API: session(payment_status, metadata)
         alt payment_status != "paid"
@@ -133,15 +133,20 @@ sequenceDiagram
                     API->>DB: クーポンを取得(coupons)
                     DB-->>API: クーポン or なし
                 end
-                API->>API: 小計・割引額・税(10%)・合計金額を計算
-                API->>Service: fulfill_order(user, cart_items, total_price, discount_amount, coupon_code, status="processing", applied_coupon, stripe_payment_intent_id)
+                API->>Service: place_order(user, coupon_code, status="processing", stripe_payment_intent_id, expected_total, expected_fingerprint)
+                Service->>Service: 商品ID・数量・単価・coupon・合計を再計算
+                alt 金額またはfingerprintがStripe Sessionと不一致
+                    Service-->>API: CheckoutAmountMismatchError / CheckoutSnapshotMismatchError
+                    API-->>Frontend: 409「決済時から注文内容が変更されたため、注文を確定できません」
+                else 金額一致
                 Service->>DB: Order・OrderItemを作成、在庫を減算、カートを削除、クーポン使用回数を加算
                 DB-->>Service: コミット完了
-                Service->>Mail: send_order_confirmation(注文情報)
-                Mail-->>Service: 送信完了(またはログ出力のみ)
                 Service-->>API: Order
+                API->>Mail: send_order_confirmation(注文情報)
+                Mail-->>API: 送信完了(またはログ出力のみ)
                 API-->>Frontend: 200 OrderOut
                 Frontend->>顧客: 注文完了を表示
+                end
             end
         end
     end
@@ -488,5 +493,5 @@ sequenceDiagram
 
 ## 補足: UC-002とUC-003の内部処理の違い
 
-- UC-003(`POST /orders`)はクーポンコードが無効な場合に**400で中断**するが、UC-002(`POST /payment/checkout` / `POST /payment/complete`)は無効なコードを**割引なしとして続行**する。この差異は実装由来・業務未確認であり、決済経路による結果差を解消する要決定事項として`04_error_handling_design.md`に記録する。
+- UC-003(`POST /orders`)とUC-002(`POST /payment/checkout` / `POST /payment/complete`)は、共通checkout serviceを利用し、無効または使用上限到達のクーポンを400で拒否する。
 - 注文の`status`は、UC-003では`"pending"`、UC-002では`"processing"`となる(コードの実装差異をそのまま記載)。

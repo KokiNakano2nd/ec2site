@@ -12,13 +12,16 @@ export function AuthProvider({ children }) {
       setUser(null);
       return;
     }
-    fetchMe(token)
+    const controller = new AbortController();
+    fetchMe(token, { signal: controller.signal })
       .then(setUser)
-      .catch(() => {
+      .catch((error) => {
+        if (error.name === "AbortError") return;
         setToken(null);
         setUser(null);
         localStorage.removeItem("token");
       });
+    return () => controller.abort();
   }, [token]);
 
   async function login(email, password) {

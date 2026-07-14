@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
-export async function fetchConfig() {
-  return apiFetch("/config", { fallback: { stripe_enabled: false } });
+export async function fetchConfig({ signal } = {}) {
+  return apiFetch("/config", { signal, fallback: { stripe_enabled: false } });
 }
 
 export async function createCheckoutSession(token, couponCode = null) {

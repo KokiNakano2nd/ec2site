@@ -9,6 +9,7 @@ import { CouponBox } from "../components/CouponBox";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldLabel } from "../components/FieldLabel";
 import { C } from "../lib/constants";
+import { calculateCartTotals } from "../lib/cartTotals";
 import { fmt } from "../lib/format";
 
 export function CartView({ onOrderComplete, showToast }) {
@@ -26,13 +27,22 @@ export function CartView({ onOrderComplete, showToast }) {
   const [stripeLoading, setStripeLoading] = useState(false);
 
   useEffect(() => {
-    fetchCart(token).then(setItems).catch((err) => setError(err.message));
-    fetchAddresses(token).then((addrs) => {
+    const controller = new AbortController();
+    const requestOptions = { signal: controller.signal };
+    fetchCart(token, requestOptions).then(setItems).catch((err) => {
+      if (err.name !== "AbortError") setError(err.message);
+    });
+    fetchAddresses(token, requestOptions).then((addrs) => {
       setAddresses(addrs);
       const def = addrs.find((a) => a.is_default);
       if (def) setSelectedAddressId(def.id);
-    }).catch(() => {});
-    fetchConfig().then((cfg) => setStripeEnabled(cfg.stripe_enabled)).catch(() => {});
+    }).catch((err) => {
+      if (err.name !== "AbortError") setError(err.message);
+    });
+    fetchConfig(requestOptions).then((cfg) => setStripeEnabled(cfg.stripe_enabled)).catch((err) => {
+      if (err.name !== "AbortError") setError(err.message);
+    });
+    return () => controller.abort();
   }, [token]);
 
   async function handleApplyCoupon() {
@@ -104,15 +114,7 @@ export function CartView({ onOrderComplete, showToast }) {
     }
   }
 
-  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const discountAmount = appliedCoupon
-    ? appliedCoupon.discount_type === "percentage"
-      ? subtotal * appliedCoupon.discount_value / 100
-      : Math.min(appliedCoupon.discount_value, subtotal)
-    : 0;
-  const discountedSubtotal = subtotal - discountAmount;
-  const tax = discountedSubtotal * 0.1;
-  const grandTotal = discountedSubtotal + tax;
+  const { subtotal, discountAmount, tax, grandTotal } = calculateCartTotals(items, appliedCoupon);
 
   return (
     <div style={{ animation: "fadeUp 0.3s ease" }}>

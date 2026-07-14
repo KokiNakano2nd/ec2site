@@ -20,7 +20,7 @@ export default defineConfig({
       exclude: [
         "src/main.jsx",
         "src/test/**",
-        "src/api/**",
+        "src/api/{addresses,admin,analytics,auth,cart,coupons,favorites,orders,payment,products,reviews}.js",
         "src/App.jsx",
         "src/pages/MainView.jsx",
         "src/AuthContext.jsx",

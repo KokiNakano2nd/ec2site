@@ -1,21 +1,18 @@
-import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from . import config
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
 
-SMTP_HOST = os.getenv("SMTP_HOST", "")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@techstore.local")
-
 
 def send_email(to: str, subject: str, body_html: str) -> None:
-    if not SMTP_HOST:
+    if config.EMAIL_DELIVERY == "disabled":
+        logger.info("メール送信は無効です(to=%s, subject=%s)", to, subject)
+        return
+    if config.EMAIL_DELIVERY == "console":
         print(f"[EMAIL] To: {to}")
         print(f"[EMAIL] Subject: {subject}")
         print("[EMAIL] ---")
@@ -29,14 +26,14 @@ def send_email(to: str, subject: str, body_html: str) -> None:
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = FROM_EMAIL
+        msg["From"] = config.FROM_EMAIL
         msg["To"] = to
         msg.attach(MIMEText(body_html, "html", "utf-8"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+        with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as smtp:
             smtp.starttls()
-            if SMTP_USER:
-                smtp.login(SMTP_USER, SMTP_PASSWORD)
-            smtp.sendmail(FROM_EMAIL, to, msg.as_string())
+            if config.SMTP_USER:
+                smtp.login(config.SMTP_USER, config.SMTP_PASSWORD)
+            smtp.sendmail(config.FROM_EMAIL, to, msg.as_string())
         logger.info("メール送信成功(to=%s, subject=%s)", to, subject)
     except Exception as e:
         logger.error("メール送信失敗(to=%s, subject=%s): %s", to, subject, e)

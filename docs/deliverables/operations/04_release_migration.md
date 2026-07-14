@@ -61,7 +61,7 @@ flowchart LR
 
 ## 7. 未決事項
 
-- ホスティング、container registry、artifact署名方式
+- ホスティング、artifact保管・署名方式
 - staging/productionのDB製品とmigration tool
 - deploy方式(rolling/blue-green等)とrollback判断者
 - release cadence、maintenance window、通知先

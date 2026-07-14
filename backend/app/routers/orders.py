@@ -4,8 +4,14 @@ from sqlalchemy.orm import Session
 
 from .. import auth, email_utils, models, schemas
 from ..database import get_db
-from ..services.order_actions import calculate_subtotal, fulfill_order, reverse_order
-from ..services.order_calc import calculate_discount, calculate_total
+from ..services.checkout import (
+    CouponUsageLimitError,
+    EmptyCartError,
+    InsufficientStockError,
+    InvalidCouponError,
+    place_order,
+)
+from ..services.order_actions import RefundError, reverse_order
 
 router = APIRouter()
 
@@ -16,47 +22,29 @@ def create_order(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_items = db.execute(select(models.Cart).where(models.Cart.user_id == current_user.id)).scalars().all()
-    if not cart_items:
-        raise HTTPException(status_code=400, detail="カートが空です")
+    try:
+        order = place_order(
+            db,
+            user=current_user,
+            coupon_code=order_in.coupon_code,
+            status="pending",
+        )
+    except EmptyCartError as error:
+        raise HTTPException(status_code=400, detail="カートが空です") from error
+    except InsufficientStockError as error:
+        raise HTTPException(status_code=400, detail=f"{error.product_name}の在庫数が不足しています") from error
+    except InvalidCouponError as error:
+        raise HTTPException(status_code=400, detail="無効なクーポンコードです") from error
+    except CouponUsageLimitError as error:
+        raise HTTPException(status_code=400, detail="このクーポンは使用回数の上限に達しています") from error
 
-    for cart_item in cart_items:
-        if cart_item.quantity > cart_item.product.stock:
-            raise HTTPException(
-                status_code=400,
-                detail=f"{cart_item.product.name}の在庫数が不足しています",
-            )
-
-    subtotal = calculate_subtotal(cart_items)
-
-    discount_amount = 0.0
-    applied_coupon = None
-    if order_in.coupon_code:
-        coupon = db.execute(
-            select(models.Coupon).where(
-                models.Coupon.code == order_in.coupon_code,
-                models.Coupon.is_active == True,  # noqa: E712
-            )
-        ).scalar_one_or_none()
-        if coupon is None:
-            raise HTTPException(status_code=400, detail="無効なクーポンコードです")
-        if coupon.max_uses is not None and coupon.used_count >= coupon.max_uses:
-            raise HTTPException(status_code=400, detail="このクーポンは使用回数の上限に達しています")
-        discount_amount = calculate_discount(subtotal, coupon)
-        applied_coupon = coupon
-
-    _discounted_subtotal, _tax, total_price = calculate_total(subtotal, discount_amount)
-
-    return fulfill_order(
-        db,
-        user=current_user,
-        cart_items=cart_items,
-        total_price=total_price,
-        discount_amount=discount_amount,
-        coupon_code=order_in.coupon_code,
-        status="pending",
-        applied_coupon=applied_coupon,
+    email_utils.send_order_confirmation(
+        user_email=current_user.email,
+        order_id=order.id,
+        total_price=order.total_price,
+        items=[{"name": item.product.name, "quantity": item.quantity, "price": item.price} for item in order.items],
     )
+    return order
 
 
 @router.get("/orders", response_model=list[schemas.OrderOut])
@@ -101,7 +89,10 @@ def cancel_order(
     if order.status not in ("pending", "processing"):
         raise HTTPException(status_code=400, detail="発送済みの注文はキャンセルできません")
 
-    reverse_order(db, order)
+    try:
+        reverse_order(db, order)
+    except RefundError as error:
+        raise HTTPException(status_code=500, detail="返金処理に失敗しました") from error
     order.status = "cancelled"
     db.commit()
     db.refresh(order)

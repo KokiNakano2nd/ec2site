@@ -111,7 +111,7 @@ class Order(Base):
     discount_amount: Mapped[float] = mapped_column(default=0)
     coupon_code: Mapped[str | None] = mapped_column(default=None)
     status: Mapped[str] = mapped_column(default="pending")
-    stripe_payment_intent_id: Mapped[str | None] = mapped_column(default=None)
+    stripe_payment_intent_id: Mapped[str | None] = mapped_column(default=None, unique=True, index=True)
     return_reason: Mapped[str | None] = mapped_column(default=None)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 

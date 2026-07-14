@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+.tools/
 .venv/
 venv/
 docs/study/.venv-pyspy/
@@ -16,16 +17,13 @@ node_modules/
 frontend/dist/
 frontend/coverage/
 
-# Playwright: locally-vendored shared libs for headless Chromium (this sandbox has
-# no root/sudo, so `playwright install --with-deps` can't run system package
-# installs) - see playwright.config.js comment for details.
-frontend/.playwright-libs/
+# Playwright
 frontend/test-results/
 frontend/playwright-report/
 
 # Env files
-.env
-.env.local
+.env*
+!.env.example
 
 # OS
 .DS_Store

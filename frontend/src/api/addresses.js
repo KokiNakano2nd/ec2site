@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
-export async function fetchAddresses(token) {
-  return apiFetch("/addresses", { token, fallback: [] });
+export async function fetchAddresses(token, { signal } = {}) {
+  return apiFetch("/addresses", { token, signal, fallback: [] });
 }
 
 export async function createAddress(token, data) {

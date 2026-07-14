@@ -7,7 +7,13 @@ export function RecommendationsSection({ productId, onSelect, favProductIds = ne
   const [recs, setRecs] = useState([]);
 
   useEffect(() => {
-    fetchRecommendations(productId).then(setRecs).catch(() => {});
+    const controller = new AbortController();
+    fetchRecommendations(productId, { signal: controller.signal })
+      .then(setRecs)
+      .catch((error) => {
+        if (error.name !== "AbortError") setRecs([]);
+      });
+    return () => controller.abort();
   }, [productId]);
 
   if (recs.length === 0) return null;

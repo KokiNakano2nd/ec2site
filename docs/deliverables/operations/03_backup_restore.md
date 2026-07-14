@@ -2,7 +2,7 @@
 
 ## 1. 現状と目標
 
-現行のローカルSQLite DBは`backend/app/data/ec_site.db`にあり、自動バックアップ、暗号化保管、復元演習はない。Docker Composeのbind mountはバックアップではない。永続データ運用前の暫定目標はRPO 24時間、RTO 4時間(NFR-026)とする。
+現行のローカルSQLite DBは`backend/app/data/ec_site.db`にあり、自動バックアップ、暗号化保管、復元演習はない。開発ホスト上にファイルが存在するだけではバックアップにならない。永続データ運用前の暫定目標はRPO 24時間、RTO 4時間(NFR-026)とする。
 
 ## 2. 対象データ
 

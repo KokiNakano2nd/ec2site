@@ -16,8 +16,8 @@ export async function login(email, password) {
   });
 }
 
-export async function fetchMe(token) {
-  return apiFetch("/auth/me", { token, errorMessage: "ユーザー情報の取得に失敗しました" });
+export async function fetchMe(token, { signal } = {}) {
+  return apiFetch("/auth/me", { token, signal, errorMessage: "ユーザー情報の取得に失敗しました" });
 }
 
 export async function requestPasswordReset(email) {

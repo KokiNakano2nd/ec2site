@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
-export async function fetchCart(token) {
-  return apiFetch("/cart", { token, errorMessage: "カート情報の取得に失敗しました" });
+export async function fetchCart(token, { signal } = {}) {
+  return apiFetch("/cart", { token, signal, errorMessage: "カート情報の取得に失敗しました" });
 }
 
 export async function addToCart(token, productId, quantity) {

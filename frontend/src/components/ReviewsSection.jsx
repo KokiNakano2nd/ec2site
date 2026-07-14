@@ -16,7 +16,14 @@ export function ReviewsSection({ productId, onNavigateLogin, showToast }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchReviews(productId).then(setReviews).catch(() => {});
+    const controller = new AbortController();
+    setError(null);
+    fetchReviews(productId, { signal: controller.signal })
+      .then(setReviews)
+      .catch((requestError) => {
+        if (requestError.name !== "AbortError") setError(requestError.message);
+      });
+    return () => controller.abort();
   }, [productId]);
 
   const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;

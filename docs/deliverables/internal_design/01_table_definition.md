@@ -235,7 +235,7 @@ classDiagram
 | discount_amount | FLOAT | | NOT NULL | 0 | 割引額 |
 | coupon_code | STRING | | NULL可 | なし | 適用されたクーポンコード(FK制約なし。上記訂正メモ参照) |
 | status | STRING | | NOT NULL | "pending" | 注文状態("pending" / "processing" / "shipped" / "cancelled" / "return_requested" / "returned" 等) |
-| stripe_payment_intent_id | STRING | | NULL可 | なし | Stripe決済完了時のPaymentIntent ID(`POST /payment/complete`で設定。キャンセル・返品承認時の返金先として使用。カード決済を使わず確定した注文は`NULL`のまま)(2026-07-11追加) |
+| stripe_payment_intent_id | STRING | UNIQUE, index | NULL可 | なし | Stripe決済完了時のPaymentIntent ID。モデル定義と新規DBでは一意。既存DBはmigration未導入のため制約反映を保証しない。カード決済を使わず確定した注文は`NULL`のまま |
 | return_reason | STRING | | NULL可 | なし | 返品申請時に顧客が入力した理由(任意入力)(2026-07-11追加) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 
@@ -278,7 +278,7 @@ classDiagram
 ## 3. 改善提案(実装にないインデックス等)
 
 - `carts.user_id` / `orders.user_id` / `order_items.order_id` など、頻繁に絞り込み条件として使われる外部キー列には、現状インデックスが明示的に貼られていない。パフォーマンス改善の余地があるが、これは確定事項ではなく改善提案として本節に留める(テーブル定義表本体には含めない)。
-- `orders.stripe_payment_intent_id`に一意制約がなく、同じStripe決済から複数注文を作成できる。Webhook移行では外部event IDの処理台帳とPaymentIntent/Session IDの一意制約を追加する(NFR-030)。
+- `orders.stripe_payment_intent_id`の一意制約はモデルと新規DBにはあるが、migration未導入の既存DBには自動反映されない。同時要求の完全な冪等性は未保証であり、Webhook移行では外部event IDの処理台帳と既存DBへの制約migrationを追加する(NFR-030)。
 - `carts(user_id, product_id)`、`favorites(user_id, product_id)`、`reviews(user_id, product_id)`にDB一意制約がなく、アプリ側の事前確認だけでは並行要求時の重複を防げない。業務上の一意性として制約化を検討する。
 - 金額・割引値がFLOATであり、通貨計算の丸め・等価比較に不向きである。JPYの整数最小通貨単位または精度を定めたDECIMALへ移行し、変換・照合計画を作成する(CON-005)。
 - 配送先は注文へsnapshot保存されないため、注文時の宛先を後から再現できない。実配送を扱う前にORDER_ADDRESS等のsnapshotを設計する(TBD-006)。

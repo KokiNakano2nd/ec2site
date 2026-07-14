@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
-export async function fetchReviews(productId) {
-  return apiFetch(`/products/${productId}/reviews`, { errorMessage: "レビューの取得に失敗しました" });
+export async function fetchReviews(productId, { signal } = {}) {
+  return apiFetch(`/products/${productId}/reviews`, { signal, errorMessage: "レビューの取得に失敗しました" });
 }
 
 export async function postReview(token, productId, rating, comment) {

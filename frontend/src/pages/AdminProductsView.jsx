@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { createProduct, deleteProduct, updateProduct } from "../api/admin";
 import { addProductImage, deleteProductImage, fetchProducts } from "../api/products";
 import { useAuth } from "../AuthContext";
@@ -199,12 +199,16 @@ export function AdminProductsView({ showToast }) {
                   </td>
                 </tr>
               ) : (
-                <>
+                <Fragment key={product.id}>
                 <tr key={product.id} className="admin-row" style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
                   <td style={{ padding: "16px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 36, height: 36, background: C.dark, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <img src={product.image_url} alt={product.name} loading="lazy" style={{ width: 28, height: 28, objectFit: "contain" }} />
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.name} loading="lazy" style={{ width: 28, height: 28, objectFit: "contain" }} />
+                        ) : (
+                          <span aria-hidden="true" style={{ color: C.muted }}>—</span>
+                        )}
                       </div>
                       <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{product.name}</span>
                     </div>
@@ -247,7 +251,7 @@ export function AdminProductsView({ showToast }) {
                     </td>
                   </tr>
                 )}
-                </>
+                </Fragment>
               )
             )}
           </tbody>

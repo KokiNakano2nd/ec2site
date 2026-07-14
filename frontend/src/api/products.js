@@ -9,8 +9,8 @@ export async function fetchProductById(id) {
   return apiFetch(`/products/${id}`, { errorMessage: "商品詳細の取得に失敗しました" });
 }
 
-export async function fetchRecommendations(productId) {
-  return apiFetch(`/products/${productId}/recommendations`, { fallback: [] });
+export async function fetchRecommendations(productId, { signal } = {}) {
+  return apiFetch(`/products/${productId}/recommendations`, { signal, fallback: [] });
 }
 
 export async function fetchProductImages(productId) {
