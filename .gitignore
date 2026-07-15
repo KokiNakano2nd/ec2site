@@ -25,5 +25,10 @@ frontend/playwright-report/
 .env*
 !.env.example
 
+# Terraform (providerのlockfile .terraform.lock.hcl はコミットする)
+.terraform/
+infra/bootstrap/terraform.tfstate
+infra/bootstrap/terraform.tfstate.backup
+
 # OS
 .DS_Store

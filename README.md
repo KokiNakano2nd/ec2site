@@ -12,7 +12,7 @@
 
 Linux/WSL x86_64上で実行する。backendとPostgreSQLはDockerコンテナで起動し(ADR-003)、lint・test・E2E等のtoolchainはプロジェクト内の`.tools/`へ導入されるため、システム全体へのPython/Node.jsのインストールは不要。
 
-前提は`bash`、`make`、`curl`、gzip/xz対応`tar`、`install`、`sha256sum`、Docker Engine(compose plugin含む)。セットアップスクリプトは配布物のSHA-256を検証する。
+前提は`bash`、`make`、`curl`、gzip/xz対応`tar`、`unzip`、`install`、`sha256sum`、Docker Engine(compose plugin含む)。セットアップスクリプトは配布物のSHA-256を検証する。IaC([infra/](infra/))用のTerraformも固定版が`.tools/`へ導入される。
 
 OSパッケージを変更する次の2つは、管理者承認のうえ一度だけ手動で実行する(`make bootstrap`からは自動実行しない)。
 

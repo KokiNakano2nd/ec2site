@@ -26,6 +26,11 @@ GITLEAKS_ARCHIVE="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
 GITLEAKS_SHA256="551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
 GITLEAKS_URL="https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION/$GITLEAKS_ARCHIVE"
 
+TERRAFORM_VERSION="1.15.8"
+TERRAFORM_ARCHIVE="terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+TERRAFORM_SHA256="d25ce7b6902013ad905db3d2eab0be4cd905887fe88b81a6171b8d5503c31f3d"
+TERRAFORM_URL="https://releases.hashicorp.com/terraform/$TERRAFORM_VERSION/$TERRAFORM_ARCHIVE"
+
 ACTIONLINT_VERSION="1.7.12"
 ACTIONLINT_ARCHIVE="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
 ACTIONLINT_SHA256="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
@@ -62,6 +67,12 @@ if [[ ! -x "$BIN_DIR/gitleaks" ]] || [[ "$("$BIN_DIR/gitleaks" version)" != "$GI
     download_and_verify "$GITLEAKS_URL" "$work_dir/$GITLEAKS_ARCHIVE" "$GITLEAKS_SHA256"
     tar -xzf "$work_dir/$GITLEAKS_ARCHIVE" -C "$work_dir" gitleaks
     install -m 0755 "$work_dir/gitleaks" "$BIN_DIR/gitleaks"
+fi
+
+if [[ ! -x "$BIN_DIR/terraform" ]] || ! "$BIN_DIR/terraform" version | grep -q "^Terraform v$TERRAFORM_VERSION\$"; then
+    download_and_verify "$TERRAFORM_URL" "$work_dir/$TERRAFORM_ARCHIVE" "$TERRAFORM_SHA256"
+    unzip -oq "$work_dir/$TERRAFORM_ARCHIVE" terraform -d "$work_dir"
+    install -m 0755 "$work_dir/terraform" "$BIN_DIR/terraform"
 fi
 
 if [[ ! -x "$BIN_DIR/actionlint" ]] || [[ "$("$BIN_DIR/actionlint" -version)" != "$ACTIONLINT_VERSION" ]]; then

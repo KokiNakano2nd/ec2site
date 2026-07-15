@@ -9,7 +9,7 @@
 ## 2. 前提とスコープ
 
 - 学習目的のため、単一region・単一AZ・単一タスクの最小構成から始める。可用性(Multi-AZ、複数タスク)はスコープ外とし、拡張余地だけ確保する
-- region、独自ドメイン名、月額コスト上限は未確定であり、Terraform実装前に決定する(本書では`ap-northeast-1`を仮置きする)
+- regionは`ap-northeast-1`(東京)で確定した(2026-07-15)。独自ドメイン名と月額コスト上限は未確定であり、apply前に決定する
 - 開発環境も[ADR-003](adr/ADR-003-aws-container-deployment.md)によりコンテナ(Docker Compose)を採用する方針へ転換する。開発環境の詳細と移行手順は[開発環境ToBe設計](04_development_environment_tobe.md)を正本とし、本書ではbackendのDockerfileを開発・本番で共有することのみ前提に置く
 - CI/CDパイプラインの詳細は[CI/CD・DevSecOps ToBe設計](05_cicd_devsecops_tobe.md)へ統合し、本書ではインフラ側の受け口(ECR、OIDCロール)のみ扱う
 
@@ -24,7 +24,7 @@ flowchart TB
     SMTP["SMTPサービス(外部)"]
     GHA["GitHub Actions(CI/CD)"]
 
-    subgraph AWS["AWSアカウント(region: ap-northeast-1 仮)"]
+    subgraph AWS["AWSアカウント(region: ap-northeast-1)"]
         R53["Route 53(DNS)"]
         ACM["ACM証明書(us-east-1)"]
         CF["CloudFront(TLS終端 / パスルーティング)"]
@@ -98,6 +98,7 @@ flowchart TB
 
 ```text
 infra/
+├── bootstrap/          # tfstateバケット + GitHub OIDCロール(一回限り、ローカルstate)
 ├── environments/
 │   ├── staging/        # 環境ごとのroot module(backend設定・変数値)
 │   └── production/
@@ -108,6 +109,8 @@ infra/
     └── frontend/       # S3、CloudFront、Route 53、ACM
 ```
 
+- Terraformは固定版(1.15.8)を`make bootstrap`が`.tools/`へ導入する。適用手順と意図的な暫定事項(CloudFront-ALB間HTTP、OIDCロール権限の最小化前)は[infra/README.md](../../../infra/README.md)を正本とする
+
 - tfstateはS3バックエンドに保存し、Terraform 1.10以降の`use_lockfile`でロックする。stateには機密が入りうるためバケットは非公開・暗号化・バージョニング必須
 - CI/CDからのAWS認証はGitHub OIDCによる一時資格情報とし、長期アクセスキーを発行しない
 - 手作業でのコンソール変更は行わず、差分は`terraform plan`で常に確認する
@@ -116,19 +119,20 @@ infra/
 
 ### Phase 0: 決定事項の確定
 
-- [ ] region、ドメイン、月額コスト上限を決定し本書へ反映する
+- [x] regionを決定する(`ap-northeast-1`、2026-07-15確定)
+- [ ] ドメイン、月額コスト上限を決定し本書へ反映する
 - [ ] [ADR-003](adr/ADR-003-aws-container-deployment.md)をAcceptedにする
 
 ### Phase 1: アプリ側の前提整備
 
-- [ ] Alembic等によるversioned migrationを導入する(本番化ゲート3)
+- [x] Alembic等によるversioned migrationを導入する(本番化ゲート3)
 - [ ] backend本番用Dockerfileを作成し、PostgreSQLへの接続をstaging相当で検証する
 - [ ] Stripe Webhookの署名検証・冪等性を実装する(本番化ゲート5)
 
 ### Phase 2: Terraform土台と基盤
 
-- [ ] tfstate用S3バケットとGitHub OIDCロールを作成する
-- [ ] network / database モジュールを実装しstagingへapplyする
+- [ ] tfstate用S3バケットとGitHub OIDCロールを作成する(コードは`infra/bootstrap/`に実装済み、AWSアカウント準備後にapply)
+- [ ] network / database モジュールを実装しstagingへapplyする(モジュールと`infra/environments/`は実装・validate済み、apply待ち)
 
 ### Phase 3: アプリ配備
 
