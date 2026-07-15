@@ -45,6 +45,20 @@ jobs:
       - name: Run pytest (with coverage gate)
         run: uv run pytest
 
+  # 本番と共有するDockerfileをビルドし、migration適用→drift検査→全pytestをPostgreSQL相手に実行する
+  backend-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - name: Run migrations, drift check, and pytest against containerized PostgreSQL
+        run: docker compose -f compose.test.yaml run --build --rm backend-test
+      - name: Tear down containers
+        if: ${{ always() }}
+        run: docker compose -f compose.test.yaml down --remove-orphans
+
   frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -82,25 +96,23 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
-        with:
-          version: "0.11.28"
-          python-version: "3.12.13"
-          enable-cache: true
-          cache-dependency-glob: backend/uv.lock
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: frontend/.nvmrc
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-      - name: Install backend dependencies
-        run: uv sync --project backend --frozen
+      # backendはPlaywrightのwebServerがcompose.e2e.yamlで起動する。イメージだけ先にビルドしておく
+      - name: Build backend E2E image
+        run: docker compose -f compose.e2e.yaml build
       - name: Install frontend dependencies
         run: npm --prefix frontend ci
       - name: Install Playwright Chromium and system dependencies
         run: npm --prefix frontend exec -- playwright install --with-deps chromium
       - name: Run Playwright smoke tests
         run: npm --prefix frontend run test:e2e:smoke
+      - name: Tear down containers
+        if: ${{ always() }}
+        run: docker compose -f compose.e2e.yaml down --remove-orphans
       - name: Upload Playwright diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

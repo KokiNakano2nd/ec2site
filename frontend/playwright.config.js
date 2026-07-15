@@ -14,11 +14,14 @@ export default defineConfig({
   reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "list",
   webServer: [
     {
-      command: "uv run python -m scripts.run_e2e_server",
-      cwd: "../backend",
-      port: 8000,
-      timeout: 60000,
+      // backend + PostgreSQL をコンテナで起動する (root の compose.e2e.yaml)。
+      // port ではなく url で待つ: ポート公開は uvicorn の起動より先に開くため。
+      command: "docker compose -f compose.e2e.yaml up --build --force-recreate",
+      cwd: "..",
+      url: "http://127.0.0.1:8000/products",
+      timeout: 300000,
       reuseExistingServer: !process.env.CI,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 30000 },
     },
     {
       command: "npm run dev -- --port 5174",

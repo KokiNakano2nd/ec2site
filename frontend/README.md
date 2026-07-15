@@ -29,7 +29,7 @@ make lint
 make e2e
 ```
 
-- backendは`backend/scripts/run_e2e_server.py`からテスト専用の一時SQLiteで起動され、開発DBには接続しない。
+- backendはPlaywrightのwebServerがroot `compose.e2e.yaml`で起動する(本番共有Dockerfile + PostgreSQL)。DBはtmpfsのため実行のたびに初期化され、開発DBには接続しない。Docker Engineが必要。
 - PR CIでは`@smoke`を付けたChromiumの主要導線を実行し、失敗時にtrace・screenshot・HTML reportを7日間保存する。
 - 手元では`make e2e-smoke`でsmoke subset、`make e2e`で全件を実行できる。
 - CI(GitHub Actions)ではESLint・Prettier・Vitest(カバレッジゲート込み)・production依存監査・buildも自動実行される(`.github/workflows/ci.yml`)。

@@ -15,7 +15,7 @@ export PLAYWRIGHT_BROWSERS_PATH := $(TOOLS_DIR)/playwright
 
 COMPOSE := docker compose
 
-.PHONY: help bootstrap verify-toolchain verify-docker seed seed-host dev dev-host backend-dev frontend-dev migrate migration format lint workflow-lint test build check e2e e2e-smoke security
+.PHONY: help bootstrap verify-toolchain verify-docker seed seed-host dev dev-host backend-dev frontend-dev migrate migration format lint workflow-lint test test-integration build check e2e e2e-smoke security
 
 help:
 	@echo "bootstrap       Install the pinned local toolchain and locked dependencies"
@@ -27,10 +27,11 @@ help:
 	@echo "format          Format backend source"
 	@echo "lint            Run static checks and documentation checks"
 	@echo "workflow-lint   Validate GitHub Actions workflows"
-	@echo "test            Run backend and frontend tests"
+	@echo "test            Run backend and frontend tests (fast host path, SQLite)"
+	@echo "test-integration Run backend tests against containerized PostgreSQL (CI parity)"
 	@echo "build           Build the frontend"
 	@echo "check           Run the same non-E2E quality gates as CI"
-	@echo "e2e             Run Playwright with self-managed web servers"
+	@echo "e2e             Run Playwright against the containerized backend + PostgreSQL"
 	@echo "e2e-smoke       Run the fast Playwright smoke subset"
 	@echo "security        Scan Git history for secrets with Gitleaks"
 
@@ -101,18 +102,25 @@ test:
 	cd backend && uv run pytest
 	cd frontend && npm run test:coverage
 
+test-integration: verify-docker
+	@$(COMPOSE) -f compose.test.yaml run --build --rm backend-test; status=$$?; \
+	$(COMPOSE) -f compose.test.yaml down --remove-orphans; exit $$status
+
 build:
 	cd frontend && npm run build
 
 check: verify-toolchain lint workflow-lint test build
 	cd backend && uv run pip-audit
 	cd frontend && npm run audit:prod
+	$(MAKE) test-integration
 
-e2e:
-	cd frontend && npm run test:e2e
+e2e: verify-docker
+	@cd frontend && npm run test:e2e; status=$$?; \
+	cd .. && $(COMPOSE) -f compose.e2e.yaml down --remove-orphans; exit $$status
 
-e2e-smoke:
-	cd frontend && npm run test:e2e:smoke
+e2e-smoke: verify-docker
+	@cd frontend && npm run test:e2e:smoke; status=$$?; \
+	cd .. && $(COMPOSE) -f compose.e2e.yaml down --remove-orphans; exit $$status
 
 security:
 	@command -v gitleaks >/dev/null || { echo "Run 'make bootstrap' first" >&2; exit 1; }

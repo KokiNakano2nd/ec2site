@@ -4,7 +4,11 @@ from pathlib import Path
 
 _tmp_dir = tempfile.TemporaryDirectory()
 os.environ["APP_ENV"] = "test"
-os.environ["DATABASE_URL"] = f"sqlite:///{Path(_tmp_dir.name) / 'test.db'}"
+# CI統合ゲート(compose.test.yaml)はTEST_DATABASE_URLでコンテナのPostgreSQLを指す。
+# 未指定時は従来どおり一時SQLiteで実行する(ローカルの高速経路)。
+os.environ["DATABASE_URL"] = (
+    os.environ.get("TEST_DATABASE_URL", "").strip() or f"sqlite:///{Path(_tmp_dir.name) / 'test.db'}"
+)
 os.environ["SECRET_KEY"] = "test-secret-key-not-for-production-only"
 os.environ.pop("STRIPE_ENABLED", None)
 os.environ["STRIPE_SECRET_KEY"] = ""

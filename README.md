@@ -62,6 +62,6 @@ Dockerを使わない従来のホスト起動(SQLite)は`make dev-host`で残し
 make check
 ```
 
-主要E2Eは`make e2e`、PR相当のsmokeは`make e2e-smoke`、GitHub Actionsの静的検査は`make workflow-lint`、秘密情報の履歴スキャンは`make security`で実行する。必要な実行ファイルとPlaywrightブラウザは`.tools/`に置かれ、git管理されない。
+`make check`はCIと同じ非E2Eゲート(lint、テスト、ビルド、依存監査)に加え、`make test-integration`(本番共有Dockerfileのコンテナ内でPostgreSQL相手に全pytestを実行)を含むためDocker Engineが必要。主要E2Eは`make e2e`、PR相当のsmokeは`make e2e-smoke`で実行し、backendはコンテナ構成([compose.e2e.yaml](compose.e2e.yaml))で起動される。GitHub Actionsの静的検査は`make workflow-lint`、秘密情報の履歴スキャンは`make security`で実行する。必要な実行ファイルとPlaywrightブラウザは`.tools/`に置かれ、git管理されない。
 
 脆弱性の非公開報告手順は[Security Policy](SECURITY.md)を参照する。

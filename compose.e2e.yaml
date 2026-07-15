@@ -1,0 +1,39 @@
+# E2E用 (make e2e / make e2e-smoke / CI e2e-smoke)。Playwright の webServer が
+# このファイルで backend + PostgreSQL を起動する (frontend/playwright.config.js)。
+# 本番と共有する backend/Dockerfile を使い、migration適用 → seed → 起動を行う。
+# 資格情報はテスト専用の既知の値。DBはtmpfsのため起動のたびに空で始まる。
+# project名を分離し、開発用compose.yaml(project: ec2site)のコンテナと衝突しないようにする。
+name: ec2site-e2e
+services:
+  db:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_USER: ec_site
+      POSTGRES_PASSWORD: ec_site
+      POSTGRES_DB: ec_site_e2e
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: backend
+      target: base
+    environment:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://ec_site:ec_site@db:5432/ec_site_e2e
+      SECRET_KEY: e2e-secret-key-not-for-production-only
+      STRIPE_ENABLED: "false"
+      STRIPE_SECRET_KEY: ""
+      EMAIL_DELIVERY: console
+    ports:
+      # frontend dev server(ホスト)の既定 API URL http://localhost:8000 に合わせる
+      - "127.0.0.1:8000:8000"
+    command: sh -c "alembic upgrade head && python -m scripts.seed_dev && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    depends_on:
+      db:
+        condition: service_healthy

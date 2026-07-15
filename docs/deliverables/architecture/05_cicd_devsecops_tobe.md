@@ -31,9 +31,9 @@
 
 | 領域 | 現状 | 評価 | 主な差分 |
 |---|---|---|---|
-| backend CI | Ruff、format check、OpenAPI・文書整合、pip-audit、pytest/coverage | workflow定義済み、実行履歴要確認 | job timeout、結果artifact、変更範囲最適化 |
+| backend CI | Ruff、format check、OpenAPI・文書整合、pip-audit、pytest/coverage(SQLite高速経路)、コンテナ統合ゲート(Dockerfileビルド+Alembic適用/drift検査+PostgreSQLでの全pytest) | workflow定義済み、実行履歴要確認 | job timeout、結果artifact、変更範囲最適化 |
 | frontend CI | ESLint、Prettier、Vitest/coverage、production SCA、production build | workflow定義・ローカル検証済み、Actions実行履歴要確認 | build artifact、bundle予算、アクセシビリティ |
-| E2E | Playwright 4件、PR用Chromium smoke 2件、失敗診断artifact | workflow定義・ローカル検証済み、Actions実行履歴要確認 | main全件、定期クロスブラウザ |
+| E2E | Playwright 4件、PR用Chromium smoke 2件、失敗診断artifact。backendは本番共有Dockerfile+PostgreSQLのコンテナ構成(`compose.e2e.yaml`) | workflow定義・ローカル検証済み、Actions実行履歴要確認 | main全件、定期クロスブラウザ |
 | SAST | CodeQLのPython/JavaScript `security-extended` | workflow定義済み、実行・merge gate要確認 | alert運用、誤検知抑制、結果SLA |
 | SCA | pip-audit、production npm audit、Dependabot、PR dependency review、期限付き例外台帳 | workflow定義・ローカル検証済み、Actions実行履歴要確認 | license方針、Dependabot grouping改善 |
 | secret検査 | GitleaksでGit履歴をPR/main/週次検査 | workflow定義・ローカル検証済み、merge gate要確認 | GitHub push protectionの有効化確認、対応手順 |
@@ -78,7 +78,8 @@ PRの必須checkは、10〜15分以内を目標に次を並列実行する。
 | Check名（案） | 内容 | 合格条件 |
 |---|---|---|
 | `backend-quality` | frozen sync、Ruff、format、OpenAPI・文書整合 | 全checkがexit 0 |
-| `backend-test` | pytest、coverage | 全成功、既存coverage閾値以上 |
+| `backend-test` | pytest、coverage(SQLite高速経路) | 全成功、既存coverage閾値以上 |
+| `backend-integration` | 本番共有Dockerfileビルド、Alembic適用・drift検査、PostgreSQLでの全pytest | 全成功 |
 | `frontend-quality` | frozen install、ESLint、formatter、build | 全成功、lockfile差分なし |
 | `frontend-test` | Vitest、coverage | 全成功、既存coverage閾値以上 |
 | `e2e-smoke` | Chromiumで認証・商品閲覧・主要購入前フロー | 全成功。失敗時trace/reportを保存 |

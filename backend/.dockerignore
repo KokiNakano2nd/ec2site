@@ -4,6 +4,5 @@
 __pycache__
 **/__pycache__
 app/data
-tests
 htmlcov
 .coverage

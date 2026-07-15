@@ -1,0 +1,38 @@
+# CI統合ゲート用 (make test-integration / .github/workflows/ci.yml backend-integration)。
+# 本番と共有する backend/Dockerfile の test stage をビルドし、コンテナ内で
+# migration適用 → model/migration drift検査 → 全pytest を PostgreSQL 相手に実行する。
+# 資格情報はテスト専用の既知の値。DBはtmpfsのため実行のたびに空で始まり、ポートも公開しない。
+# project名を分離し、開発用compose.yaml(project: ec2site)のコンテナと衝突しないようにする。
+name: ec2site-test
+services:
+  db:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_USER: ec_site
+      POSTGRES_PASSWORD: ec_site
+      POSTGRES_DB: ec_site_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend-test:
+    build:
+      context: backend
+      target: test
+    environment:
+      APP_ENV: test
+      # alembic(upgrade/check)は DATABASE_URL、pytest(conftest)は TEST_DATABASE_URL を読む
+      DATABASE_URL: postgresql+psycopg://ec_site:ec_site@db:5432/ec_site_test
+      TEST_DATABASE_URL: postgresql+psycopg://ec_site:ec_site@db:5432/ec_site_test
+      SECRET_KEY: test-secret-key-not-for-production-only
+      STRIPE_SECRET_KEY: ""
+      SMTP_HOST: ""
+      EMAIL_DELIVERY: console
+    command: sh -c "alembic upgrade head && alembic check && pytest"
+    depends_on:
+      db:
+        condition: service_healthy

@@ -29,6 +29,14 @@ FROM base AS dev
 # 開発ではmigration適用を起動時に自動実行する(本番は別工程で適用してから起動する)。
 CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8001"]
 
+FROM base AS test
+# CI統合テスト用(compose.test.yaml)。dev依存(pytest等)とテスト一式を追加する。
+# 本番(production)stageはこのstageを経由しないため、テスト資材はrelease imageに入らない。
+RUN uv sync --frozen --no-install-project
+COPY pytest.ini ./
+COPY tests ./tests
+CMD ["pytest"]
+
 FROM base AS production
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 USER app
