@@ -86,7 +86,7 @@ flowchart TB
 
 | 区分 | 変数 | 注入方式 |
 |---|---|---|
-| 機密 | `SECRET_KEY`, `DATABASE_URL`, `STRIPE_SECRET_KEY`, `SMTP_PASSWORD`, `SMTP_USER` | Secrets Manager → ECSタスク定義のsecrets参照 |
+| 機密 | `SECRET_KEY`, `DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SMTP_PASSWORD`, `SMTP_USER` | Secrets Manager → ECSタスク定義のsecrets参照 |
 | 非機密 | `APP_ENV=production`, `FRONTEND_URL`, `CORS_ORIGINS`, `STRIPE_ENABLED`, `EMAIL_DELIVERY`, `SMTP_HOST`, `SMTP_PORT`, `FROM_EMAIL`, `LOG_LEVEL` | ECSタスク定義の環境変数(Terraform管理) |
 | ビルド時 | `VITE_API_URL` | frontendビルド時に本番APIのURLを埋め込む(CI/CDで指定) |
 
@@ -127,7 +127,7 @@ infra/
 
 - [x] Alembic等によるversioned migrationを導入する(本番化ゲート3)
 - [ ] backend本番用Dockerfileを作成し、PostgreSQLへの接続をstaging相当で検証する
-- [ ] Stripe Webhookの署名検証・冪等性を実装する(本番化ゲート5)
+- [x] Stripe Webhookの署名検証・冪等性を実装する(本番化ゲート5。実Stripeからの受信検証はstagingで行う)
 
 ### Phase 2: Terraform土台と基盤
 

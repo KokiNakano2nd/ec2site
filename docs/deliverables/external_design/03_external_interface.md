@@ -7,7 +7,7 @@
 **連携方式(現行)**: REST API呼び出し(サーバー間通信、`backend/app/routers/payment.py`からStripe SDK経由) + リダイレクト(顧客のブラウザをStripeの決済ページへ遷移)
 **認証情報の扱い**: `STRIPE_SECRET_KEY`を環境変数で管理する。コード・リポジトリには値を含めない
 
-**元になったAPI仕様**: `POST /payment/checkout`, `POST /payment/complete`(`02_api_spec.md`)
+**元になったAPI仕様**: `POST /payment/checkout`, `POST /payment/complete`, `POST /payment/webhook`(`02_api_spec.md`)
 
 ### 送信データ(Session作成時、`POST /payment/checkout`内)
 
@@ -45,28 +45,23 @@
 
 現行実装はStripe例外の`str(e)`をAPIレスポンスへ含める。外部エラー詳細や内部識別子を顧客へ過剰開示する可能性があるため、本番化前に安定した内部エラーコードと一般化したメッセージへ置換し、詳細は機密情報を除去したサーバーログだけへ記録する。また、Stripe SDK呼び出しの明示タイムアウトは未実装(NFR-004)である。
 
-### 現行の決済確定経路とリスク
+### 決済確定経路: Stripe Webhook正経路(2026-07-16実装)
 
-- 現状のEC_SITE実装はWebhookを使用しない。顧客のブラウザが`success_url`にリダイレクトされ、フロントエンドがそのURLの`session_id`を使って`POST /payment/complete`を呼び出す方式(ブラウザ経由のリダイレクト+セッション照会方式)である
-- success redirectが到達しない、タブが閉じられる場合は支払済み未確定となるリスクが残る。同じPaymentIntentの逐次再送は既存注文を返す。新規DBには一意制約があるが既存DBへのmigrationとWebhookイベント台帳は未実装であり、同時要求の完全な冪等性は保証しない
+決済確定の正経路は`POST /payment/webhook`によるWebhook受信である(Stripeはfulfillmentをlanding pageだけに依存せずWebhookで行うことを推奨している。公式: https://docs.stripe.com/checkout/fulfillment )。ブラウザの`success_url`リダイレクトから呼ばれる`POST /payment/complete`は、Webhook到達前に結果を確定表示するための補完経路として残し、どちらが先に処理しても注文は1件になる。
 
-### 本番化目標: Stripe Webhook正経路
-
-次は承認済みの設計目標であり、未実装である。詳細なendpointと保存schemaは実装変更時にADR/API/テーブル設計へ反映する。
-
-| 項目 | 目標仕様 |
+| 項目 | 実装 |
 |---|---|
-| endpoint | `POST /webhooks/stripe`等の認証不要専用endpoint。公開パスは実装時に確定 |
-| 対象event | 少なくとも`checkout.session.completed`。非同期決済方法を追加する場合は成功/失敗eventを追加 |
-| authenticity | raw request bodyと`Stripe-Signature`をWebhook signing secretで検証。Bearer/JWT認証で代替しない |
-| acknowledgement | 署名・受理可否を判定後、Stripe再試行を考慮して速やかに2xx/非2xxを返す。重い後続処理は分離を検討 |
-| idempotency | Stripe event IDをUNIQUEで記録し、処理済みeventは副作用を再実行せず2xxを返す |
-| order key | Checkout Session/PaymentIntent IDを注文または決済台帳で一意化する |
-| consistency | 注文・在庫・クーポン更新を1 DB transactionにまとめ、StripeとDBをまたぐ失敗は再試行/照合可能にする |
-| browser role | success pageは結果表示・状態pollingのみとし、注文確定の正経路にしない |
-| verification | 重複、順不同、遅延、署名不正、途中失敗、再試行をsandbox/結合テストする |
+| endpoint | `POST /payment/webhook`(認証不要の専用endpoint) |
+| 対象event | `checkout.session.completed`(`payment_status=paid`のみ)。他のevent種別は受理して無視 |
+| authenticity | raw request bodyと`Stripe-Signature`を`STRIPE_WEBHOOK_SECRET`で検証(`WebhookSignature.verify_header`)。Bearer/JWT認証で代替しない |
+| acknowledgement | 署名不正は400。処理不能な業務エラー(カート変更等)は記録して200で受理し運用照合へ。予期しない失敗は5xxでStripe再試行に任せる |
+| idempotency | Stripe event IDを`stripe_webhook_events`テーブルへUNIQUE記録し、処理済みeventは副作用なしで200(`duplicate: true`)を返す |
+| order key | PaymentIntent IDを`orders.stripe_payment_intent_id`のUNIQUE制約で一意化(Alembic migrationで全DBへ反映) |
+| consistency | 注文・在庫・クーポン更新は`place_order`が1 DB transactionで確定する |
+| browser role | success pageは`POST /payment/complete`で結果を確定表示する補完経路(正経路にしない) |
+| verification | 署名不正・event再送・PaymentIntent再送・経路またぎ・金額不一致を`test_stripe_payment.py`で検証済み。実Stripeからの受信はstaging結合テストで検証する(未実施) |
 
-Stripeはfulfillmentをlanding pageだけに依存せずWebhookで行うことを推奨している。公式: https://docs.stripe.com/checkout/fulfillment
+Stripe管理画面でのWebhook endpoint登録(URL、署名secretの発行)はstaging/production構築時に行い、secretは`STRIPE_WEBHOOK_SECRET`としてSecrets Manager経由で注入する。
 
 ## 2. 連携先: SMTP(メール送信基盤)
 

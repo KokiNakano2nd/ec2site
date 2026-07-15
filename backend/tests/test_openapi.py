@@ -1,7 +1,7 @@
 from app.main import app
 
 
-def test_openapi_documents_all_54_application_operations():
+def test_openapi_documents_all_55_application_operations():
     schema = app.openapi()
     documented = {
         (method.upper(), path)
@@ -10,11 +10,12 @@ def test_openapi_documents_all_54_application_operations():
         if method in {"get", "post", "put", "patch", "delete", "options", "head", "trace"}
     }
 
-    assert len(documented) == 54
+    assert len(documented) == 55
     assert {
         ("GET", "/orders/{order_id}"),
         ("GET", "/products/{product_id}/recommendations"),
         ("GET", "/products/{product_id}/images"),
+        ("POST", "/payment/webhook"),
     } <= documented
 
 

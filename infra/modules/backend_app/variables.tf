@@ -55,7 +55,7 @@ variable "app_environment" {
 variable "secret_names" {
   description = "Secrets Manager経由で注入する機密環境変数名(値はTerraform外でput-secret-valueする)"
   type        = list(string)
-  default     = ["SECRET_KEY", "DATABASE_URL", "STRIPE_SECRET_KEY", "SMTP_USER", "SMTP_PASSWORD"]
+  default     = ["SECRET_KEY", "DATABASE_URL", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SMTP_USER", "SMTP_PASSWORD"]
 }
 
 variable "health_check_path" {

@@ -13,7 +13,7 @@
 | F-003 | UC-001 | S-002; `GET /coupons/validate` | `test_order_creation.py`; `CartView.test.jsx` | 部分検証 | 検証API固有の有効期限境界 |
 | F-004 | US-003 | S-002; 注文・決済API | `test_order_creation.py`, `test_stripe_payment.py`; `CartView.test.jsx` | 直接検証 | 金額型をDecimal化した後の丸め境界 |
 | F-005 | UC-002 | S-002/S-003; `GET /config`, `POST /payment/checkout` | `test_stripe_payment.py`; `CartView.test.jsx`; `purchase.spec.js` | 部分検証 | 実Stripe sandboxを使う契約テスト |
-| F-006 | UC-002 | S-003/S-004; `POST /payment/complete` | `test_stripe_payment.py`; `OrderHistoryView.test.jsx` | 部分検証 | Webhook正経路と再送時の冪等性 |
+| F-006 | UC-002 | S-003/S-004; `POST /payment/complete`; `POST /payment/webhook` | `test_stripe_payment.py`; `OrderHistoryView.test.jsx` | 部分検証 | 実Stripeからの Webhook受信(staging結合テスト) |
 | F-007 | US-005 | N-001 | `test_order_creation.py`, `test_stripe_payment.py` | 部分検証 | 実SMTP配送、再送、恒久失敗 |
 | F-008 | UC-003 | S-002/S-004; `POST /orders` | `test_order_creation.py`; `CartView.test.jsx`; `purchase.spec.js` | 直接検証 | 同時購入時の在庫競合 |
 | F-009 | US-006 | S-005; `POST /auth/register` | `test_auth.py`, `test_rate_limit.py`; `AuthView.test.jsx`; `auth.spec.js` | 直接検証 | — |

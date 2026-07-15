@@ -44,6 +44,7 @@ _cors_origins = os.getenv("CORS_ORIGINS", "").strip()
 CORS_ORIGINS = [origin.strip().rstrip("/") for origin in _cors_origins.split(",") if origin.strip()] or [FRONTEND_URL]
 
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 _stripe_enabled_value = _optional_bool("STRIPE_ENABLED")
 STRIPE_ENABLED = _stripe_enabled_value if _stripe_enabled_value is not None else bool(STRIPE_SECRET_KEY)
 
@@ -93,6 +94,8 @@ def validate_settings() -> None:
         raise RuntimeError("production requires HTTPS CORS_ORIGINS")
     if EMAIL_DELIVERY == "console":
         raise RuntimeError("production cannot use EMAIL_DELIVERY=console")
+    if STRIPE_ENABLED and not STRIPE_WEBHOOK_SECRET:
+        raise RuntimeError("production with Stripe enabled requires STRIPE_WEBHOOK_SECRET")
 
 
 validate_settings()

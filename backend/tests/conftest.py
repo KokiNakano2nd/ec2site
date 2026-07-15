@@ -98,6 +98,13 @@ def stripe_enabled(monkeypatch):
     monkeypatch.setattr("app.config.STRIPE_SECRET_KEY", "sk_test_dummy")
 
 
+@pytest.fixture
+def stripe_webhook_enabled(stripe_enabled, monkeypatch):
+    secret = "whsec_test_dummy"
+    monkeypatch.setattr("app.config.STRIPE_WEBHOOK_SECRET", secret)
+    return secret
+
+
 def create_order_for_user(client, headers, product_id, quantity=1):
     client.post("/cart", json={"product_id": product_id, "quantity": quantity}, headers=headers)
     res = client.post("/orders", headers=headers)

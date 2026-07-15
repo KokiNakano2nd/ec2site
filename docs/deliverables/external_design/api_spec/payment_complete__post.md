@@ -29,4 +29,4 @@
 
 同じPaymentIntentの完了処理が再送された場合は、新しい注文を作らず既存注文を200で返す。
 
-Stripe Sessionの`amount_total`、およびcheckout時の商品ID・数量・単価・coupon・totalから作ったfingerprintを、確定直前の再計算結果と照合する。金額または明細が異なる場合は注文を作成せず409を返し、支払済み未確定として運用照合を要する。逐次再送は既存注文を返すが、既存DBへの一意制約migrationとWebhookイベント台帳は未実装である。
+Stripe Sessionの`amount_total`、およびcheckout時の商品ID・数量・単価・coupon・totalから作ったfingerprintを、確定直前の再計算結果と照合する。金額または明細が異なる場合は注文を作成せず409を返し、支払済み未確定として運用照合を要する。PaymentIntent IDの一意制約はAlembic migration(初回スキーマ)で全DBへ反映され、Webhookイベント台帳([payment_webhook__post.md](payment_webhook__post.md)、`stripe_webhook_events`)と合わせて経路をまたぐ再送でも注文は1件に保たれる。決済確定の正経路はWebhookであり、本APIはsuccess redirect時の補完経路である。

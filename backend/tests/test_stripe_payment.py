@@ -1,3 +1,8 @@
+import hashlib
+import hmac
+import json
+import time
+
 from app.database import SessionLocal
 from app.services.checkout import quote_fingerprint, quote_order
 
@@ -323,5 +328,211 @@ def test_complete_payment_rejects_changed_cart_items_with_same_amount(
     res = client.post("/payment/complete", params={"session_id": "cs_changed_items"}, headers=auth_headers)
 
     assert res.status_code == 409
+    assert client.get("/orders", headers=auth_headers).json() == []
+    assert len(client.get("/cart", headers=auth_headers).json()) == 1
+
+
+# ---- Webhook (署名検証と冪等性) ----
+
+
+def _sign_payload(payload: bytes, secret: str, timestamp: int | None = None) -> str:
+    timestamp = timestamp if timestamp is not None else int(time.time())
+    signed = f"{timestamp}.".encode() + payload
+    signature = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    return f"t={timestamp},v1={signature}"
+
+
+def _webhook_payload(
+    user_id,
+    *,
+    event_id="evt_test_1",
+    event_type="checkout.session.completed",
+    payment_status="paid",
+    payment_intent="pi_webhook_1",
+    amount_total=9878,
+    cart_fingerprint="0" * 64,
+    coupon_code="",
+) -> bytes:
+    event = {
+        "id": event_id,
+        "object": "event",
+        "type": event_type,
+        "data": {
+            "object": {
+                "object": "checkout.session",
+                "payment_status": payment_status,
+                "payment_intent": payment_intent,
+                "amount_total": amount_total,
+                "metadata": {
+                    "user_id": str(user_id),
+                    "coupon_code": coupon_code,
+                    "cart_fingerprint": cart_fingerprint,
+                },
+            }
+        },
+    }
+    return json.dumps(event).encode()
+
+
+def _post_webhook(client, payload: bytes, secret: str, signature: str | None = None):
+    return client.post(
+        "/payment/webhook",
+        content=payload,
+        headers={
+            "Stripe-Signature": signature if signature is not None else _sign_payload(payload, secret),
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def _cart_amount(user_id, coupon_code=None) -> int:
+    with SessionLocal() as db:
+        return int(quote_order(db, user_id=user_id, coupon_code=coupon_code).total_price)
+
+
+def test_webhook_requires_configuration(client):
+    res = client.post("/payment/webhook", content=b"{}")
+    assert res.status_code == 400
+    assert "Webhook" in res.json()["detail"]
+
+
+def test_webhook_rejects_invalid_signature(client, auth_headers, stripe_webhook_enabled):
+    user_id = _current_user_id(client, auth_headers)
+    payload = _webhook_payload(user_id)
+
+    forged = _sign_payload(payload, "whsec_wrong_secret")
+    res = _post_webhook(client, payload, stripe_webhook_enabled, signature=forged)
+    assert res.status_code == 400
+
+    res = client.post("/payment/webhook", content=payload)
+    assert res.status_code == 400
+    assert client.get("/orders", headers=auth_headers).json() == []
+
+
+def test_webhook_creates_order_and_clears_cart(client, auth_headers, stripe_webhook_enabled):
+    user_id = _current_user_id(client, auth_headers)
+    product = _add_to_cart(client, auth_headers, quantity=2)
+    payload = _webhook_payload(
+        user_id,
+        amount_total=_cart_amount(user_id),
+        cart_fingerprint=_cart_fingerprint(user_id),
+    )
+
+    res = _post_webhook(client, payload, stripe_webhook_enabled)
+
+    assert res.status_code == 200
+    assert res.json() == {"received": True}
+    orders = client.get("/orders", headers=auth_headers).json()
+    assert len(orders) == 1
+    assert orders[0]["status"] == "processing"
+    assert client.get("/cart", headers=auth_headers).json() == []
+    refreshed = client.get(f"/products/{product['id']}").json()
+    assert refreshed["stock"] == product["stock"] - 2
+
+
+def test_webhook_replayed_event_is_deduplicated(client, auth_headers, stripe_webhook_enabled):
+    user_id = _current_user_id(client, auth_headers)
+    _add_to_cart(client, auth_headers)
+    payload = _webhook_payload(
+        user_id,
+        amount_total=_cart_amount(user_id),
+        cart_fingerprint=_cart_fingerprint(user_id),
+    )
+
+    first = _post_webhook(client, payload, stripe_webhook_enabled)
+    replay = _post_webhook(client, payload, stripe_webhook_enabled)
+
+    assert first.json() == {"received": True}
+    assert replay.status_code == 200
+    assert replay.json() == {"received": True, "duplicate": True}
+    assert len(client.get("/orders", headers=auth_headers).json()) == 1
+
+
+def test_webhook_same_payment_intent_creates_single_order(client, auth_headers, stripe_webhook_enabled):
+    user_id = _current_user_id(client, auth_headers)
+    _add_to_cart(client, auth_headers)
+    amount = _cart_amount(user_id)
+    fingerprint = _cart_fingerprint(user_id)
+
+    first = _post_webhook(
+        client,
+        _webhook_payload(user_id, event_id="evt_a", amount_total=amount, cart_fingerprint=fingerprint),
+        stripe_webhook_enabled,
+    )
+    second = _post_webhook(
+        client,
+        _webhook_payload(user_id, event_id="evt_b", amount_total=amount, cart_fingerprint=fingerprint),
+        stripe_webhook_enabled,
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert len(client.get("/orders", headers=auth_headers).json()) == 1
+
+
+def test_webhook_ignores_unpaid_or_unknown_events(client, auth_headers, stripe_webhook_enabled):
+    user_id = _current_user_id(client, auth_headers)
+    _add_to_cart(client, auth_headers)
+
+    unpaid = _post_webhook(
+        client,
+        _webhook_payload(user_id, event_id="evt_unpaid", payment_status="unpaid"),
+        stripe_webhook_enabled,
+    )
+    unknown = _post_webhook(
+        client,
+        _webhook_payload(user_id, event_id="evt_other", event_type="charge.refunded"),
+        stripe_webhook_enabled,
+    )
+
+    assert unpaid.status_code == 200
+    assert unknown.status_code == 200
+    assert client.get("/orders", headers=auth_headers).json() == []
+    assert len(client.get("/cart", headers=auth_headers).json()) == 1
+
+
+def test_webhook_after_complete_payment_does_not_duplicate_order(
+    client, auth_headers, stripe_webhook_enabled, monkeypatch
+):
+    user_id = _current_user_id(client, auth_headers)
+    _add_to_cart(client, auth_headers)
+    amount = _cart_amount(user_id)
+    fingerprint = _cart_fingerprint(user_id)
+    monkeypatch.setattr(
+        "app.stripe_client.stripe_lib.checkout.Session.retrieve",
+        lambda session_id: FakeCompletedSession(
+            user_id, payment_intent="pi_shared", amount_total=amount, cart_fingerprint=fingerprint
+        ),
+    )
+
+    completed = client.post("/payment/complete", params={"session_id": "cs_ok"}, headers=auth_headers)
+    webhook = _post_webhook(
+        client,
+        _webhook_payload(
+            user_id,
+            event_id="evt_after_complete",
+            payment_intent="pi_shared",
+            amount_total=amount,
+            cart_fingerprint=fingerprint,
+        ),
+        stripe_webhook_enabled,
+    )
+
+    assert completed.status_code == 200
+    assert webhook.status_code == 200
+    assert len(client.get("/orders", headers=auth_headers).json()) == 1
+
+
+def test_webhook_amount_mismatch_is_accepted_but_creates_no_order(client, auth_headers, stripe_webhook_enabled):
+    user_id = _current_user_id(client, auth_headers)
+    _add_to_cart(client, auth_headers)
+
+    res = _post_webhook(
+        client,
+        _webhook_payload(user_id, amount_total=1, cart_fingerprint=_cart_fingerprint(user_id)),
+        stripe_webhook_enabled,
+    )
+
+    assert res.status_code == 200
     assert client.get("/orders", headers=auth_headers).json() == []
     assert len(client.get("/cart", headers=auth_headers).json()) == 1

@@ -104,6 +104,12 @@ classDiagram
         +string comment
         +datetime created_at
     }
+    class stripe_webhook_events {
+        +int id PK
+        +string event_id
+        +string event_type
+        +datetime created_at
+    }
 
     products "1" --> "0..*" product_images : 含む
     users "1" --> "0..*" addresses : 所有する
@@ -235,7 +241,7 @@ classDiagram
 | discount_amount | FLOAT | | NOT NULL | 0 | 割引額 |
 | coupon_code | STRING | | NULL可 | なし | 適用されたクーポンコード(FK制約なし。上記訂正メモ参照) |
 | status | STRING | | NOT NULL | "pending" | 注文状態("pending" / "processing" / "shipped" / "cancelled" / "return_requested" / "returned" 等) |
-| stripe_payment_intent_id | STRING | UNIQUE, index | NULL可 | なし | Stripe決済完了時のPaymentIntent ID。モデル定義と新規DBでは一意。既存DBはmigration未導入のため制約反映を保証しない。カード決済を使わず確定した注文は`NULL`のまま |
+| stripe_payment_intent_id | STRING | UNIQUE, index | NULL可 | なし | Stripe決済完了時のPaymentIntent ID。一意制約はAlembic migration(初回スキーマ)で全DBへ反映される。カード決済を使わず確定した注文は`NULL`のまま |
 | return_reason | STRING | | NULL可 | なし | 返品申請時に顧客が入力した理由(任意入力)(2026-07-11追加) |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 作成日時 |
 
@@ -262,6 +268,17 @@ classDiagram
 | product_id | INTEGER | FK → products.id | NOT NULL | なし | 商品 |
 | created_at | DATETIME | | - | `datetime.utcnow()` | 登録日時 |
 
+### stripe_webhook_events テーブル
+
+**元になったエンティティ**: なし(概念モデル外の技術テーブル。Stripe Webhook(`POST /payment/webhook`、F-006)の処理済みevent台帳として2026-07-16に追加。`02_api_spec.md`の[payment_webhook__post.md](../external_design/api_spec/payment_webhook__post.md)参照)
+
+| カラム名 | 型 | PK/FK | NULL許可 | デフォルト | 説明 |
+|---|---|---|---|---|---|
+| id | INTEGER | PK(index) | NOT NULL | 自動採番 | 台帳ID |
+| event_id | STRING | UNIQUE, index | NOT NULL | なし | Stripe event ID。一意性で再送を重複排除する |
+| event_type | STRING | | NOT NULL | なし | eventの種別(例: `checkout.session.completed`) |
+| created_at | DATETIME | | - | `datetime.utcnow()` | 受信処理日時 |
+
 ### reviews テーブル
 
 **元になったエンティティ**: REVIEW(`04_conceptual_er.md`。レビュー投稿業務追加(2026-07-06)により正式なエンティティとして追加された。UC-004, F-013, F-014参照)
@@ -278,7 +295,7 @@ classDiagram
 ## 3. 改善提案(実装にないインデックス等)
 
 - `carts.user_id` / `orders.user_id` / `order_items.order_id` など、頻繁に絞り込み条件として使われる外部キー列には、現状インデックスが明示的に貼られていない。パフォーマンス改善の余地があるが、これは確定事項ではなく改善提案として本節に留める(テーブル定義表本体には含めない)。
-- `orders.stripe_payment_intent_id`の一意制約はモデルと新規DBにはあるが、migration未導入の既存DBには自動反映されない。同時要求の完全な冪等性は未保証であり、Webhook移行では外部event IDの処理台帳と既存DBへの制約migrationを追加する(NFR-030)。
+- ~~`orders.stripe_payment_intent_id`の一意制約は既存DBに自動反映されない~~ → Alembic migration導入(2026-07-15)とWebhookイベント台帳`stripe_webhook_events`の追加(2026-07-16)により解消した(NFR-030)。
 - `carts(user_id, product_id)`、`favorites(user_id, product_id)`、`reviews(user_id, product_id)`にDB一意制約がなく、アプリ側の事前確認だけでは並行要求時の重複を防げない。業務上の一意性として制約化を検討する。
 - 金額・割引値がFLOATであり、通貨計算の丸め・等価比較に不向きである。JPYの整数最小通貨単位または精度を定めたDECIMALへ移行し、変換・照合計画を作成する(CON-005)。
 - 配送先は注文へsnapshot保存されないため、注文時の宛先を後から再現できない。実配送を扱う前にORDER_ADDRESS等のsnapshotを設計する(TBD-006)。

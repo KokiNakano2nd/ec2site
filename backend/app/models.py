@@ -144,6 +144,17 @@ class Favorite(Base):
     product: Mapped["Product"] = relationship()
 
 
+class StripeWebhookEvent(Base):
+    """処理済みStripe Webhookイベントの台帳。event_idの一意性で再送を重複排除する。"""
+
+    __tablename__ = "stripe_webhook_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    event_id: Mapped[str] = mapped_column(unique=True, index=True)
+    event_type: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
 class Review(Base):
     __tablename__ = "reviews"
 

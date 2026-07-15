@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import auth, config, email_utils, models, schemas, stripe_client
@@ -160,3 +163,113 @@ def complete_payment(
         items=[{"name": item.product.name, "quantity": item.quantity, "price": item.price} for item in order.items],
     )
     return order
+
+
+def _handle_checkout_session_completed(db: Session, event) -> None:
+    """checkout.session.completedから注文を確定する。PaymentIntent単位で冪等。
+
+    支払済みだが注文を確定できないケース(カート変更等)は、再送しても解消しないため
+    エラーログに残して受理し、運用照合に委ねる(payment_complete__post.md参照)。
+    """
+    session = event["data"]["object"]
+    event_id = event["id"]
+
+    if session.get("payment_status") != "paid":
+        return
+
+    payment_intent_id = str(session["payment_intent"]) if session.get("payment_intent") else None
+    if payment_intent_id:
+        existing_order = db.execute(
+            select(models.Order).where(models.Order.stripe_payment_intent_id == payment_intent_id)
+        ).scalar_one_or_none()
+        if existing_order is not None:
+            return
+
+    metadata = session.get("metadata") or {}
+    try:
+        user_id = int(metadata.get("user_id", ""))
+    except ValueError:
+        logger.error("Webhookのmetadataに有効なuser_idがありません(event_id=%s)", event_id)
+        return
+    user = db.get(models.User, user_id)
+    if user is None or not user.is_active:
+        logger.error("Webhookのuser_idが有効な会員でありません(event_id=%s, user_id=%s)", event_id, user_id)
+        return
+
+    amount_total = session.get("amount_total")
+    expected_fingerprint = metadata.get("cart_fingerprint")
+    if not isinstance(amount_total, int) or amount_total < 0:
+        logger.error("Webhookのsessionに有効な請求額がありません(event_id=%s)", event_id)
+        return
+    if not isinstance(expected_fingerprint, str) or len(expected_fingerprint) != 64:
+        logger.error("Webhookのsessionに有効なカートfingerprintがありません(event_id=%s)", event_id)
+        return
+
+    try:
+        order = place_order(
+            db,
+            user=user,
+            coupon_code=metadata.get("coupon_code") or None,
+            status="processing",
+            stripe_payment_intent_id=payment_intent_id,
+            expected_total=amount_total,
+            expected_fingerprint=expected_fingerprint,
+        )
+    except DuplicatePaymentError:
+        return
+    except (EmptyCartError, InsufficientStockError, InvalidCouponError, CouponUsageLimitError) as error:
+        logger.error(
+            "Webhookで注文を確定できませんでした(event_id=%s, user_id=%s): %s",
+            event_id,
+            user_id,
+            type(error).__name__,
+        )
+        return
+    except (CheckoutAmountMismatchError, CheckoutSnapshotMismatchError):
+        logger.error(
+            "Webhookの決済内容とカートが一致しません。運用照合が必要です(event_id=%s, user_id=%s)", event_id, user_id
+        )
+        return
+
+    email_utils.send_order_confirmation(
+        user_email=user.email,
+        order_id=order.id,
+        total_price=order.total_price,
+        items=[{"name": item.product.name, "quantity": item.quantity, "price": item.price} for item in order.items],
+    )
+
+
+@router.post("/payment/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    if not config.stripe_enabled() or not config.STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=400, detail="Stripe Webhookが設定されていません")
+
+    payload = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    try:
+        stripe_client.stripe_lib.WebhookSignature.verify_header(
+            payload.decode("utf-8"), signature, config.STRIPE_WEBHOOK_SECRET
+        )
+        event = json.loads(payload)
+    except Exception as error:
+        logger.warning("Stripe Webhookの署名検証に失敗しました: %s", type(error).__name__)
+        raise HTTPException(status_code=400, detail="署名を検証できませんでした") from error
+
+    already_processed = db.execute(
+        select(models.StripeWebhookEvent).where(models.StripeWebhookEvent.event_id == event["id"])
+    ).scalar_one_or_none()
+    if already_processed is not None:
+        return {"received": True, "duplicate": True}
+
+    if event["type"] == "checkout.session.completed":
+        _handle_checkout_session_completed(db, event)
+
+    # 台帳への記録は処理成功後に行う。途中で例外なら5xxとなりStripeが再送する
+    db.add(models.StripeWebhookEvent(event_id=event["id"], event_type=event["type"]))
+    try:
+        db.commit()
+    except IntegrityError:
+        # 並行再送との競合。処理自体はPaymentIntentの一意性で冪等のため受理する
+        db.rollback()
+        return {"received": True, "duplicate": True}
+    return {"received": True}

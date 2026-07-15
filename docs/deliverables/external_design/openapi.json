@@ -3582,6 +3582,22 @@
         "summary": "Complete Payment"
       }
     },
+    "/payment/webhook": {
+      "post": {
+        "operationId": "stripe_webhook_payment_webhook_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stripe Webhook"
+      }
+    },
     "/products": {
       "get": {
         "operationId": "list_products_products_get",

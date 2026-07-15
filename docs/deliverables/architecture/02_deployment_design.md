@@ -45,6 +45,7 @@ flowchart TB
 | `CORS_ORIGINS` | `config.py`, `main.py` | 未設定時は`FRONTEND_URL` | いいえ | productionはHTTPSのみ |
 | `STRIPE_ENABLED` | `config.py` | キー設定時のみ有効 | いいえ | `true`時はsecret key必須 |
 | `STRIPE_SECRET_KEY` | `config.py` | 任意 | はい | 未設定時はStripe機能無効 |
+| `STRIPE_WEBHOOK_SECRET` | `config.py`, `payment.py` | Stripe有効時のproductionで必須 | はい | Webhook署名検証用 |
 | `EMAIL_DELIVERY` | `config.py`, `email_utils.py` | localは`console` | いいえ | `console/disabled/smtp` |
 | `SMTP_HOST` | `config.py` | smtp選択時必須 | いいえ | SMTP接続先 |
 | `SMTP_PORT` | `email_utils.py` | `587` | いいえ | STARTTLS |

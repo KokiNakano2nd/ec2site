@@ -40,6 +40,7 @@
 | 商品購入業務 | /payment | GET | `/config` | システム設定を取得する | [config__get.md](api_spec/config__get.md) |
 | 商品購入業務 | /payment | POST | `/payment/checkout` | Stripe決済セッションを作成する | [payment_checkout__post.md](api_spec/payment_checkout__post.md) |
 | 商品購入業務 | /payment | POST | `/payment/complete` | Stripe決済完了処理を行う | [payment_complete__post.md](api_spec/payment_complete__post.md) |
+| 商品購入業務 | /payment | POST | `/payment/webhook` | Stripe Webhookを受信し注文を確定する | [payment_webhook__post.md](api_spec/payment_webhook__post.md) |
 | 商品購入業務 | /addresses(商品購入業務からの参照) | GET | `/addresses` | 配送先一覧を取得する | [addresses__get.md](api_spec/addresses__get.md) |
 | 会員管理業務 | /auth | POST | `/auth/register` | 会員登録する | [auth_register__post.md](api_spec/auth_register__post.md) |
 | 会員管理業務 | /auth | POST | `/auth/login` | ログインする | [auth_login__post.md](api_spec/auth_login__post.md) |
