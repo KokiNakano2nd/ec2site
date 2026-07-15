@@ -32,7 +32,7 @@ flowchart TB
     Tools -.-> Frontend
 ```
 
-`make dev`がseed、コンテナ群(db, backend)、frontendを起動し、`Ctrl+C`で`docker compose down`とホストプロセスの終了を行う。ポートは127.0.0.1へのみ公開し、外部公開を意図した構成ではない。SQLiteによる従来のホスト起動は`make dev-host`として残る。
+`make dev`がseed、コンテナ群(db, backend)、frontendを起動し、`Ctrl+C`で`docker compose down`とホストプロセスの終了を行う。PostgreSQLのスキーマはbackendコンテナ起動時に`alembic upgrade head`で適用され、`create_all()`はSQLite経路に限定される。ポートは127.0.0.1へのみ公開し、外部公開を意図した構成ではない。SQLiteによる従来のホスト起動は`make dev-host`として残る。
 
 ## 3. 構成値一覧
 

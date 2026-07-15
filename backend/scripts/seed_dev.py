@@ -7,7 +7,9 @@ def main() -> None:
     if config.APP_ENV not in {"local", "test"}:
         raise RuntimeError("Seed is allowed only when APP_ENV is local or test")
 
-    Base.metadata.create_all(bind=engine)
+    # PostgreSQLはAlembicでスキーマ管理するため、create_allはSQLiteに限定する。
+    if engine.url.get_backend_name() == "sqlite":
+        Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         seed_initial_data(db)
 

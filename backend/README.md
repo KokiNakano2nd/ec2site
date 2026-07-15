@@ -19,6 +19,17 @@ make test
 - Stripe・SMTP(メール送信)は`tests/conftest.py`のfixtureでモック化しており、実行に外部のAPIキーやネットワーク接続は不要。
 - CI(GitHub Actions)でもこのテストコマンドがpush/PRごとに自動実行される(`.github/workflows/ci.yml`)。
 
+## DBスキーマ管理
+
+PostgreSQL(コンテナ、将来のRDS)のスキーマはAlembic migration(`alembic.ini` + `migrations/`)のみで管理する。`create_all()`はSQLite(pytest、`make dev-host`)向けの簡便経路に限定している。
+
+```bash
+make migrate                     # コンテナのPostgreSQLへmigrationを適用
+make migration m="変更の説明"    # モデル変更からmigrationを自動生成(要レビュー)
+```
+
+`make dev`・`make seed`は起動時に`alembic upgrade head`を自動実行する。自動生成されたmigrationは必ず内容をレビューし、モデルと同じ変更でコミットする。
+
 ## Lint
 
 ```bash

@@ -34,6 +34,8 @@ services:
       # --reload 用にソースだけを差し込む (/app/.venv はイメージ側を使う)
       - ./backend/app:/app/app
       - ./backend/scripts:/app/scripts
+      # migration生成(make migration)の結果をホストへ書き戻すため双方向にmount
+      - ./backend/migrations:/app/migrations
     depends_on:
       db:
         condition: service_healthy

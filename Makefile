@@ -15,13 +15,15 @@ export PLAYWRIGHT_BROWSERS_PATH := $(TOOLS_DIR)/playwright
 
 COMPOSE := docker compose
 
-.PHONY: help bootstrap verify-toolchain verify-docker seed seed-host dev dev-host backend-dev frontend-dev format lint workflow-lint test build check e2e e2e-smoke security
+.PHONY: help bootstrap verify-toolchain verify-docker seed seed-host dev dev-host backend-dev frontend-dev migrate migration format lint workflow-lint test build check e2e e2e-smoke security
 
 help:
 	@echo "bootstrap       Install the pinned local toolchain and locked dependencies"
 	@echo "seed            Seed local development data into the containerized PostgreSQL"
 	@echo "dev             Run backend + PostgreSQL in containers and frontend on the host"
 	@echo "dev-host        Run backend and frontend on the host with SQLite (legacy path)"
+	@echo "migrate         Apply Alembic migrations to the containerized PostgreSQL"
+	@echo "migration       Autogenerate an Alembic migration (make migration m=\"message\")"
 	@echo "format          Format backend source"
 	@echo "lint            Run static checks and documentation checks"
 	@echo "workflow-lint   Validate GitHub Actions workflows"
@@ -54,7 +56,14 @@ verify-docker:
 	@docker info >/dev/null 2>&1 || { echo "Docker daemon is not running or not accessible; check 'systemctl status docker' and the docker group" >&2; exit 1; }
 
 seed: verify-docker
-	$(COMPOSE) run --rm --build backend python -m scripts.seed_dev
+	$(COMPOSE) run --rm --build backend sh -c "alembic upgrade head && python -m scripts.seed_dev"
+
+migrate: verify-docker
+	$(COMPOSE) run --rm --build backend alembic upgrade head
+
+migration: verify-docker
+	@test -n "$(m)" || { echo "Usage: make migration m=\"describe the change\"" >&2; exit 1; }
+	$(COMPOSE) run --rm --build --user "$$(id -u):$$(id -g)" backend sh -c "alembic upgrade head && alembic revision --autogenerate -m '$(m)'"
 
 seed-host:
 	$(RUN_WITH_ENV) --cwd backend -- python -m scripts.seed_dev

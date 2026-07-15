@@ -18,13 +18,16 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY app ./app
 COPY scripts ./scripts
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8001
 
 FROM base AS dev
-# compose がソースを bind mount し、--reload で変更を反映する
-CMD ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8001"]
+# compose がソースを bind mount し、--reload で変更を反映する。
+# 開発ではmigration適用を起動時に自動実行する(本番は別工程で適用してから起動する)。
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8001"]
 
 FROM base AS production
 RUN groupadd --system app && useradd --system --gid app --no-create-home app

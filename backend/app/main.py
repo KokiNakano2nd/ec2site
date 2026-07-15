@@ -28,7 +28,9 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    if config.APP_ENV in {"local", "test"}:
+    # PostgreSQLのスキーマはAlembic migrationのみで管理する(起動前にupgrade済みが前提)。
+    # create_allはSQLite(test、`make dev-host`)向けの簡便経路に限定する。
+    if config.APP_ENV in {"local", "test"} and engine.url.get_backend_name() == "sqlite":
         Base.metadata.create_all(bind=engine)
     yield
 
