@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("search, add to cart, apply coupon, place order, and cancel it", async ({ page }) => {
+test("@smoke search, add to cart, apply coupon, place order, and cancel it", async ({ page }) => {
   const email = `e2e-purchase-${Date.now()}@example.com`;
   const password = "password123";
 

@@ -28,7 +28,7 @@
 | backend API/統合 | API、認証、DB更新、業務ルール | pytest + TestClient + 一時SQLite | 必須 | 実施中 |
 | backend単体 | 金額計算、ハッシュ等の純粋ロジック | pytest | 必須 | 一部のみ。ルーター直結処理は統合試験で代替 |
 | frontendコンポーネント | 表示、入力、イベント、エラー | Vitest + RTL + API mock | 必須 | 実施中 |
-| E2E | ブラウザから実APIまでの主要フロー | Playwright + 一時SQLite | 手元のみ | 実施中だがCI外 |
+| E2E | ブラウザから実APIまでの主要フロー | Playwright + 一時SQLite | PRはChromium smoke | smoke実装済み。全件・クロスブラウザの定期CIは未実装 |
 | API/文書契約 | 実装と公開契約、文書リンク・件数・上流IDの一致 | OpenAPI生成差分、`test_openapi.py`、`scripts/check_docs.py` | 必須 | 実施中 |
 | 外部サービス契約 | Stripe/SMTPの実際の契約・認証・失敗 | sandbox/テスト用SMTP | 定期/手動 | 未実施 |
 | 性能 | NFR-003/004 | 負荷試験・遅延注入 | 定期/手動 | 未実施 |

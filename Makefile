@@ -13,7 +13,7 @@ export UV_PYTHON_INSTALL_DIR := $(TOOLS_DIR)/python
 export UV_FROZEN := 1
 export PLAYWRIGHT_BROWSERS_PATH := $(TOOLS_DIR)/playwright
 
-.PHONY: help bootstrap verify-toolchain seed dev backend-dev frontend-dev format lint test build check e2e security
+.PHONY: help bootstrap verify-toolchain seed dev backend-dev frontend-dev format lint workflow-lint test build check e2e e2e-smoke security
 
 help:
 	@echo "bootstrap       Install the pinned local toolchain and locked dependencies"
@@ -21,10 +21,12 @@ help:
 	@echo "dev             Run backend and frontend on the host"
 	@echo "format          Format backend source"
 	@echo "lint            Run static checks and documentation checks"
+	@echo "workflow-lint   Validate GitHub Actions workflows"
 	@echo "test            Run backend and frontend tests"
 	@echo "build           Build the frontend"
 	@echo "check           Run the same non-E2E quality gates as CI"
 	@echo "e2e             Run Playwright with self-managed web servers"
+	@echo "e2e-smoke       Run the fast Playwright smoke subset"
 	@echo "security        Scan Git history for secrets with Gitleaks"
 
 bootstrap:
@@ -56,6 +58,7 @@ dev: seed
 format:
 	cd backend && uv run ruff check --fix .
 	cd backend && uv run ruff format .
+	cd frontend && npm run format
 
 lint:
 	cd backend && uv run ruff check .
@@ -63,6 +66,11 @@ lint:
 	cd backend && uv run python scripts/export_openapi.py --check
 	cd backend && uv run python scripts/check_docs.py
 	cd frontend && npm run lint
+	cd frontend && npm run format:check
+
+workflow-lint:
+	@command -v actionlint >/dev/null || { echo "Run 'make bootstrap' first" >&2; exit 1; }
+	actionlint
 
 test:
 	cd backend && uv run pytest
@@ -71,11 +79,15 @@ test:
 build:
 	cd frontend && npm run build
 
-check: verify-toolchain lint test build
+check: verify-toolchain lint workflow-lint test build
 	cd backend && uv run pip-audit --ignore-vuln PYSEC-2026-1325
+	cd frontend && npm run audit:prod
 
 e2e:
 	cd frontend && npm run test:e2e
+
+e2e-smoke:
+	cd frontend && npm run test:e2e:smoke
 
 security:
 	@command -v gitleaks >/dev/null || { echo "Run 'make bootstrap' first" >&2; exit 1; }

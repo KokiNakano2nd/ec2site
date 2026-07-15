@@ -1,0 +1,11 @@
+* @KokiNakano2nd
+
+/.github/ @KokiNakano2nd
+/backend/app/auth.py @KokiNakano2nd
+/backend/app/routers/payment.py @KokiNakano2nd
+/backend/app/services/checkout.py @KokiNakano2nd
+/backend/uv.lock @KokiNakano2nd
+/frontend/package-lock.json @KokiNakano2nd
+/docs/deliverables/architecture/03_security_privacy_design.md @KokiNakano2nd
+/docs/deliverables/architecture/05_cicd_devsecops_tobe.md @KokiNakano2nd
+/docs/deliverables/operations/04_release_migration.md @KokiNakano2nd

@@ -4,7 +4,16 @@ import userEvent from "@testing-library/user-event";
 import { FavoritesView } from "./FavoritesView";
 
 const favItems = [
-  { product: { id: 1, name: "お気に入り商品", description: "説明", price: 2000, stock: 5, image_url: "https://example.com/img.png" } },
+  {
+    product: {
+      id: 1,
+      name: "お気に入り商品",
+      description: "説明",
+      price: 2000,
+      stock: 5,
+      image_url: "https://example.com/img.png",
+    },
+  },
 ];
 
 describe("FavoritesView", () => {

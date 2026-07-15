@@ -23,8 +23,14 @@ vi.mock("../AuthContext", () => ({
 import { AdminCouponsView } from "./AdminCouponsView";
 
 const coupon = {
-  id: 1, code: "SUMMER10", discount_type: "percentage", discount_value: 10,
-  used_count: 2, max_uses: 100, is_active: true, created_at: "2026-01-01T00:00:00Z",
+  id: 1,
+  code: "SUMMER10",
+  discount_type: "percentage",
+  discount_value: 10,
+  used_count: 2,
+  max_uses: 100,
+  is_active: true,
+  created_at: "2026-01-01T00:00:00Z",
 };
 
 describe("AdminCouponsView", () => {
@@ -83,9 +89,11 @@ describe("AdminCouponsView", () => {
   });
 
   it("shows a low-remaining-uses badge when remaining uses are at or below the threshold", async () => {
-    fetchAdminCouponsMock.mockReset().mockResolvedValue([
-      { ...coupon, id: 3, code: "LOWREMAIN", max_uses: 10, used_count: 8, low_remaining_uses_threshold: 5 },
-    ]);
+    fetchAdminCouponsMock
+      .mockReset()
+      .mockResolvedValue([
+        { ...coupon, id: 3, code: "LOWREMAIN", max_uses: 10, used_count: 8, low_remaining_uses_threshold: 5 },
+      ]);
     render(<AdminCouponsView showToast={vi.fn()} />);
 
     await screen.findByText("LOWREMAIN");

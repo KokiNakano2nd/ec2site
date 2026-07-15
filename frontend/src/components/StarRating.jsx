@@ -18,7 +18,9 @@ export function StarRating({ value, onChange, readonly = false, size = 18 }) {
             transition: "color 0.1s",
             lineHeight: 1,
           }}
-        >★</span>
+        >
+          ★
+        </span>
       ))}
     </div>
   );

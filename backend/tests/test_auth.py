@@ -73,7 +73,7 @@ def test_login_rehashes_argon2id_hash_with_outdated_parameters(client):
     password = "outdated-argon2-password"
     client.post("/auth/register", json={"email": "argon2-rehash@example.com", "password": password})
 
-    outdated_hash = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1).hash(password)
+    outdated_hash = PasswordHasher(time_cost=1, memory_cost=4096, parallelism=1).hash(password)
     assert auth.password_needs_rehash(outdated_hash)
 
     with SessionLocal() as db:

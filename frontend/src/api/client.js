@@ -9,15 +9,18 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch(path, {
-  method = "GET",
-  token,
-  body,
-  errorMessage = "リクエストに失敗しました",
-  fallback,
-  parseResponse = true,
-  signal,
-} = {}) {
+export async function apiFetch(
+  path,
+  {
+    method = "GET",
+    token,
+    body,
+    errorMessage = "リクエストに失敗しました",
+    fallback,
+    parseResponse = true,
+    signal,
+  } = {},
+) {
   const headers = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;

@@ -56,7 +56,10 @@ export function MainView() {
   const favProductIds = new Set(favItems.map((f) => f.product.id));
 
   useEffect(() => {
-    if (!token) { setFavItems([]); return; }
+    if (!token) {
+      setFavItems([]);
+      return;
+    }
     const controller = new AbortController();
     fetchFavorites(token, { signal: controller.signal })
       .then(setFavItems)
@@ -85,14 +88,19 @@ export function MainView() {
   });
 
   async function toggleFav(productId) {
-    if (!token) { setView("login"); return; }
+    if (!token) {
+      setView("login");
+      return;
+    }
     if (favProductIds.has(productId)) {
       await removeFavorite(token, productId);
       setFavItems((prev) => prev.filter((f) => f.product.id !== productId));
     } else {
       await addFavorite(token, productId);
       setFavItems((prev) => [...prev, { id: Date.now(), product: { id: productId } }]);
-      fetchFavorites(token).then(setFavItems).catch((error) => showToast(error.message));
+      fetchFavorites(token)
+        .then(setFavItems)
+        .catch((error) => showToast(error.message));
     }
   }
 
@@ -116,7 +124,10 @@ export function MainView() {
     <div style={{ minHeight: "100vh", background: C.bg }}>
       <Header onNavigate={navigate} />
       <main style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px" }}>
-        {(view === "login" || view === "register" || view === "password-reset-request" || view === "password-reset-confirm") && (
+        {(view === "login" ||
+          view === "register" ||
+          view === "password-reset-request" ||
+          view === "password-reset-confirm") && (
           <AuthView
             initialMode={view}
             resetToken={resetToken}
@@ -130,7 +141,10 @@ export function MainView() {
           <FavoritesView
             favItems={favItems}
             onToggleFav={toggleFav}
-            onSelect={(id) => { setSelectedId(id); setView("products"); }}
+            onSelect={(id) => {
+              setSelectedId(id);
+              setView("products");
+            }}
           />
         )}
         {view === "profile" && <ProfileView showToast={showToast} onAccountDeleted={() => navigate("login")} />}
@@ -138,13 +152,9 @@ export function MainView() {
         {view === "admin-products" && <AdminProductsView showToast={showToast} />}
         {view === "admin-orders" && <AdminOrdersView showToast={showToast} />}
         {view === "admin-coupons" && <AdminCouponsView showToast={showToast} />}
-        {view === "products" && (
-          selectedId === null ? (
-            <ProductList
-              onSelect={handleSelect}
-              favProductIds={favProductIds}
-              onToggleFav={toggleFav}
-            />
+        {view === "products" &&
+          (selectedId === null ? (
+            <ProductList onSelect={handleSelect} favProductIds={favProductIds} onToggleFav={toggleFav} />
           ) : (
             <ProductDetail
               productId={selectedId}
@@ -155,8 +165,7 @@ export function MainView() {
               onToggleFav={toggleFav}
               onSelect={handleSelect}
             />
-          )
-        )}
+          ))}
       </main>
       <Toast message={toast} />
     </div>

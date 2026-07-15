@@ -28,15 +28,26 @@ vi.mock("../AuthContext", () => ({
 import { ProfileView } from "./ProfileView";
 
 const address = {
-  id: 1, name: "山田太郎", postal_code: "100-0001", prefecture: "東京都", city: "千代田区",
-  address_line1: "1-1-1", address_line2: "", phone: "", is_default: true,
+  id: 1,
+  name: "山田太郎",
+  postal_code: "100-0001",
+  prefecture: "東京都",
+  city: "千代田区",
+  address_line1: "1-1-1",
+  address_line2: "",
+  phone: "",
+  is_default: true,
 };
 
 describe("ProfileView", () => {
   const logout = vi.fn();
 
   beforeEach(() => {
-    useAuthMock.mockReset().mockReturnValue({ user: { email: "user@example.com", is_admin: false, is_verified: true }, token: "test-token", logout });
+    useAuthMock.mockReset().mockReturnValue({
+      user: { email: "user@example.com", is_admin: false, is_verified: true },
+      token: "test-token",
+      logout,
+    });
     fetchAddressesMock.mockReset().mockResolvedValue([address]);
     createAddressMock.mockReset();
     deleteAddressMock.mockReset();
@@ -53,7 +64,17 @@ describe("ProfileView", () => {
 
   it("creates an address via createAddress", async () => {
     const user = userEvent.setup();
-    const newAddress = { id: 2, name: "鈴木一郎", postal_code: "200-0002", prefecture: "大阪府", city: "大阪市", address_line1: "2-2-2", address_line2: "", phone: "", is_default: false };
+    const newAddress = {
+      id: 2,
+      name: "鈴木一郎",
+      postal_code: "200-0002",
+      prefecture: "大阪府",
+      city: "大阪市",
+      address_line1: "2-2-2",
+      address_line2: "",
+      phone: "",
+      is_default: false,
+    };
     createAddressMock.mockResolvedValue(newAddress);
     render(<ProfileView showToast={vi.fn()} onAccountDeleted={vi.fn()} />);
 
@@ -98,7 +119,11 @@ describe("ProfileView", () => {
   });
 
   it("shows the unverified badge and resends the verification email", async () => {
-    useAuthMock.mockReturnValue({ user: { email: "user@example.com", is_admin: false, is_verified: false }, token: "test-token", logout });
+    useAuthMock.mockReturnValue({
+      user: { email: "user@example.com", is_admin: false, is_verified: false },
+      token: "test-token",
+      logout,
+    });
     resendVerificationEmailMock.mockResolvedValue();
     const showToast = vi.fn();
     const user = userEvent.setup();

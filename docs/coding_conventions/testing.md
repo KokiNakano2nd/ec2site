@@ -65,7 +65,7 @@
 
 **移行対象**: frontendでは`api/`、`AuthContext.jsx`、`MainView.jsx`、`App.jsx`等がカバレッジ対象外である。除外理由を再評価し、認証・ルーティング・APIエラー処理の重要な振る舞いはテストまたはE2Eで保証する。
 
-**要決定**: Playwright E2Eは現在CIで実行していない。本番公開または主要導線の安定運用を始める前に、CIで実行する範囲とテスト環境を決定する。
+Playwright E2Eは、PR CIでChromiumの`@smoke` subsetを実行し、手元の`make e2e`で全件を実行する。失敗時のtrace・screenshot・HTML reportはCI artifactとして短期間保存する。クロスブラウザや全件の定期CIは[CI/CD・DevSecOps ToBe設計](../deliverables/architecture/05_cicd_devsecops_tobe.md)のPhase 2で扱う。
 
 ## 9. 主な根拠資料
 

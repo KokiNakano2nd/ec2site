@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("register, logout, and login again", async ({ page }) => {
+test("@smoke register, logout, and login again", async ({ page }) => {
   const email = `e2e-${Date.now()}@example.com`;
   const password = "password123";
 
