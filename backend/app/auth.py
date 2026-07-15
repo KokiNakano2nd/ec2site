@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 
 import bcrypt
+import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from . import config, models
@@ -70,7 +70,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError as e:
+    except jwt.InvalidTokenError as e:
         raise credentials_exception from e
 
     user = db.get(models.User, int(user_id))

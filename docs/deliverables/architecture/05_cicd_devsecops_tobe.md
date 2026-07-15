@@ -143,7 +143,7 @@ production workflowはPRイベントから直接起動しない。environment se
 | DAST | stagingのみを対象に開始し、productionへの破壊的scanを禁止する |
 | IaC | IaC採用時にfmt/validate/planと静的セキュリティ検査を追加し、production applyは承認後に限定する |
 
-現在の`pip-audit`除外`PYSEC-2026-1325`は、識別子だけで永続運用せず、影響評価、上流状況、期限、owner、代替対策を脆弱性例外台帳へ記録する。npmについても、`npm audit`を無条件に自動修正するのではなく、lockfileと互換性を保ったレビュー可能な更新にする。
+~~`pip-audit`除外`PYSEC-2026-1325`~~はpython-jose→PyJWT移行(2026-07-16)で依存ごと解消し、現在`pip-audit`の除外はゼロである。今後除外が必要になった場合は、識別子だけで永続運用せず、影響評価、上流状況、期限、owner、代替対策を脆弱性例外台帳へ記録する。npmについても、`npm audit`を無条件に自動修正するのではなく、lockfileと互換性を保ったレビュー可能な更新にする。
 
 ### 6.2 脆弱性対応SLA（初期案）
 

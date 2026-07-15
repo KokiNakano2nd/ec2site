@@ -358,7 +358,7 @@ flowchart LR
 | 実装 | `.github/workflows/ci.yml`(uv移行・ruff・pip-audit・ESLint・`permissions`・`concurrency`・`paths-ignore`を追加)、`.github/dependabot.yml`(新規)、`backend/pyproject.toml`(新規、`requirements.txt`/`requirements-dev.txt`を置き換え)、`frontend/eslint.config.js`(新規)、`README.md`(新規、CIバッジ追加)、`backend/README.md`・`frontend/README.md`(uv/lint手順を追記) |
 
 - backendの依存管理を`pip`から[uv](https://docs.astral.sh/uv/)へ移行した。CIでのインストール高速化に加え、`uv.lock`によるロックファイル管理を学習する目的も兼ねる
-- 依存脆弱性チェック(`pip-audit`)導入にあたり、既知の脆弱性のうち修正版が存在するもの(`fastapi`・`python-jose`・`python-multipart`・`pytest`)は互換性のある範囲でバージョンを上げて解消した。`ecdsa`(`python-jose`の依存先)のPYSEC-2026-1325は、pure-Pythonの ECDSA実装に起因するタイミング攻撃で、上流に修正版が存在しないため、CIでは個別に許可リスト化(`--ignore-vuln`)して対応した。他の脆弱性が新たに検知された場合はCIが失敗する
+- 依存脆弱性チェック(`pip-audit`)導入にあたり、既知の脆弱性のうち修正版が存在するもの(`fastapi`・`python-jose`・`python-multipart`・`pytest`)は互換性のある範囲でバージョンを上げて解消した。`ecdsa`(`python-jose`の依存先)のPYSEC-2026-1325は、pure-Pythonの ECDSA実装に起因するタイミング攻撃で、上流に修正版が存在しないため、CIでは個別に許可リスト化(`--ignore-vuln`)して対応した。他の脆弱性が新たに検知された場合はCIが失敗する(その後2026-07-16、`python-jose`→PyJWT移行により`ecdsa`依存ごと解消し、許可リストは撤去した)
 - `eslint-plugin-react-hooks`はv7でReact Compiler向けの新ルールセット(`static-components`・`set-state-in-effect`等)が「推奨」設定に含まれるようになったが、本プロジェクトはReact 18でCompiler未導入のため、これらのルールは既存の正当なデータフェッチパターン(`useEffect`内での`setState`等)を誤検知する。そのため、従来からある`rules-of-hooks`・`exhaustive-deps`のみを有効化する設定とした
 - CodeQL(GitHub Code Scanningのデフォルトセットアップ)を有効化した。ワークフローファイルの追加ではなくリポジトリ設定側の機能のため、`.github/workflows/`には対応するファイルが存在しない
 - CD(実際のホスティングへの自動デプロイ)は本改善のスコープ外とした。デプロイ先が未決定であり、Stripe Webhookに必要な公開HTTPSエンドポイントとDB永続化を伴うホスティング選定は別途の意思決定が必要なため、着手する場合は本項とは別に要求定義から立てる

@@ -105,7 +105,7 @@ build:
 	cd frontend && npm run build
 
 check: verify-toolchain lint workflow-lint test build
-	cd backend && uv run pip-audit --ignore-vuln PYSEC-2026-1325
+	cd backend && uv run pip-audit
 	cd frontend && npm run audit:prod
 
 e2e:

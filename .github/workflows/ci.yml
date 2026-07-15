@@ -41,7 +41,7 @@ jobs:
       - name: Check documentation integrity
         run: uv run python scripts/check_docs.py
       - name: Dependency vulnerability scan (pip-audit)
-        run: uv run pip-audit --ignore-vuln PYSEC-2026-1325 # See .github/vulnerability-exceptions.md
+        run: uv run pip-audit # Exceptions, if any, are recorded in .github/vulnerability-exceptions.md
       - name: Run pytest (with coverage gate)
         run: uv run pytest
 
