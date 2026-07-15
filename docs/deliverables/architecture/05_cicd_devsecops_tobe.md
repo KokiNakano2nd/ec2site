@@ -23,7 +23,7 @@
 - **速い失敗と深い検査を分ける**: PRでは短時間の必須検査、main・定期実行ではE2E、DAST、外部契約等の重い検査を行う
 - **再現性を保つ**: lockfile、固定toolchain、frozen installをCIでも使用し、ローカル`make check`との差を小さくする
 - **例外を期限付きにする**: 脆弱性や品質ゲートの除外は、所有者、理由、影響、期限、解消条件を記録する
-- **コンテナを前提にしない**: 現行方針どおりDocker/Dev Containerは導入しない。将来artifact形式を選ぶ際も、コンテナ採用はADRによる別決定とする
+- **artifact形式はコンテナイメージとする**: [ADR-003](adr/ADR-003-aws-container-deployment.md)によりコンテナを採用した(従来の「前提にしない」方針の別決定にあたる)。backendのrelease artifactはECRへpushするイメージ(git SHAタグ、digestで昇格)、frontendはビルド成果物とする
 
 ## 3. 現状評価
 
@@ -220,13 +220,13 @@ production workflowはPRイベントから直接起動しない。environment se
 
 ## 9. 採用しない／時期尚早なもの
 
-- ホスティング未決定のままcloud固有deploy workflowを作らない
+- [AWSデプロイToBe設計](06_aws_deployment_tobe.md)で定義されていないcloud固有deploy workflowを作らない
 - production secretをPR CIへ渡さない
 - CDを整備する前にDB migration、監視、rollbackを省略した自動本番反映を行わない
 - 全検査を毎PRへ詰め込み、遅く不安定なパイプラインにしない
 - `latest`タグやbranch名だけをrelease artifactの同一性根拠にしない
 - botによる破壊的な依存自動修正をreviewなしでmergeしない
-- コンテナ、Kubernetes、self-hosted runner、複雑なmonorepo基盤を目的なく導入しない
+- Kubernetes、self-hosted runner、複雑なmonorepo基盤を目的なく導入しない
 
 ## 10. 完了条件
 

@@ -10,15 +10,23 @@
 
 ## セットアップ
 
-Linux/WSL x86_64上で実行する。DockerやDev Containerは使用しない。必要なtoolchainはプロジェクト内の`.tools/`へ導入されるため、システム全体へのPython/Node.jsのインストールは不要。
+Linux/WSL x86_64上で実行する。backendとPostgreSQLはDockerコンテナで起動し(ADR-003)、lint・test・E2E等のtoolchainはプロジェクト内の`.tools/`へ導入されるため、システム全体へのPython/Node.jsのインストールは不要。
 
-前提は`bash`、`make`、`curl`、gzip/xz対応`tar`、`install`、`sha256sum`。セットアップスクリプトは配布物のSHA-256を検証する。E2EにはChromiumのLinux共有ライブラリも必要で、未導入の場合は管理者承認のうえ一度だけ次を実行する。
+前提は`bash`、`make`、`curl`、gzip/xz対応`tar`、`install`、`sha256sum`、Docker Engine(compose plugin含む)。セットアップスクリプトは配布物のSHA-256を検証する。
+
+OSパッケージを変更する次の2つは、管理者承認のうえ一度だけ手動で実行する(`make bootstrap`からは自動実行しない)。
+
+Docker Engine未導入の場合(WSL/Ubuntu、systemd有効が前提):
+
+```bash
+bash scripts/install_docker_wsl.sh
+```
+
+E2Eに必要なChromiumのLinux共有ライブラリが未導入の場合:
 
 ```bash
 PATH="$PWD/.tools/bin:$PATH" npm --prefix frontend exec -- playwright install-deps chromium
 ```
-
-このコマンドはOSパッケージを変更するため、`make bootstrap`からは自動実行しない。
 
 初回セットアップ:
 
@@ -39,9 +47,14 @@ make bootstrap
 make dev
 ```
 
+`make dev`はDocker ComposeでPostgreSQLとbackend(FastAPI、`--reload`付き)を起動し、frontend(Vite dev server)をホストで起動する。開発データのseedも自動で行う。
+
 - frontend: http://localhost:5174
 - backend: http://localhost:8001
 - API docs: http://localhost:8001/docs
+- PostgreSQL: 127.0.0.1:5432 (ローカル専用資格情報は[compose.yaml](compose.yaml)を参照)
+
+Dockerを使わない従来のホスト起動(SQLite)は`make dev-host`で残している。
 
 ## 品質チェック
 

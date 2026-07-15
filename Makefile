@@ -13,12 +13,15 @@ export UV_PYTHON_INSTALL_DIR := $(TOOLS_DIR)/python
 export UV_FROZEN := 1
 export PLAYWRIGHT_BROWSERS_PATH := $(TOOLS_DIR)/playwright
 
-.PHONY: help bootstrap verify-toolchain seed dev backend-dev frontend-dev format lint workflow-lint test build check e2e e2e-smoke security
+COMPOSE := docker compose
+
+.PHONY: help bootstrap verify-toolchain verify-docker seed seed-host dev dev-host backend-dev frontend-dev format lint workflow-lint test build check e2e e2e-smoke security
 
 help:
 	@echo "bootstrap       Install the pinned local toolchain and locked dependencies"
-	@echo "seed            Seed local development data explicitly"
-	@echo "dev             Run backend and frontend on the host"
+	@echo "seed            Seed local development data into the containerized PostgreSQL"
+	@echo "dev             Run backend + PostgreSQL in containers and frontend on the host"
+	@echo "dev-host        Run backend and frontend on the host with SQLite (legacy path)"
 	@echo "format          Format backend source"
 	@echo "lint            Run static checks and documentation checks"
 	@echo "workflow-lint   Validate GitHub Actions workflows"
@@ -46,10 +49,23 @@ backend-dev:
 frontend-dev:
 	$(RUN_WITH_ENV) --cwd frontend -- npm run dev -- --host --port 5174
 
-seed:
+verify-docker:
+	@command -v docker >/dev/null || { echo "Docker Engine is required; see README.md" >&2; exit 1; }
+	@docker info >/dev/null 2>&1 || { echo "Docker daemon is not running or not accessible; check 'systemctl status docker' and the docker group" >&2; exit 1; }
+
+seed: verify-docker
+	$(COMPOSE) run --rm --build backend python -m scripts.seed_dev
+
+seed-host:
 	$(RUN_WITH_ENV) --cwd backend -- python -m scripts.seed_dev
 
-dev: seed
+dev: verify-docker seed
+	@$(COMPOSE) up --build db backend & compose_pid=$$!; \
+	$(MAKE) frontend-dev & frontend_pid=$$!; \
+	trap 'kill $$frontend_pid 2>/dev/null || true; $(COMPOSE) down' EXIT INT TERM; \
+	wait
+
+dev-host: seed-host
 	@$(MAKE) backend-dev & backend_pid=$$!; \
 	$(MAKE) frontend-dev & frontend_pid=$$!; \
 	trap 'kill $$backend_pid $$frontend_pid 2>/dev/null || true' EXIT INT TERM; \

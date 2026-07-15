@@ -6,3 +6,4 @@
 |---|---|---|
 | [ADR-001](ADR-001-openapi-source-of-truth.md) | Accepted | API仕様の機械可読な正本をFastAPI生成OpenAPIとする |
 | [ADR-002](ADR-002-argon2id-password-migration.md) | Accepted | Argon2idへログイン時段階移行する |
+| [ADR-003](ADR-003-aws-container-deployment.md) | Proposed | 本番配布方式をAWS ECS Fargate(コンテナ)とし、IaCをTerraformで管理する |

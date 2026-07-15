@@ -32,6 +32,7 @@ flowchart LR
         X3["03_security_privacy_design.md / ADR"]
         X4["04_development_environment_tobe.md"]
         X5["05_cicd_devsecops_tobe.md"]
+        X6["06_aws_deployment_tobe.md"]
     end
     subgraph external_design["外部設計"]
         C1["01_screen_design.md"]
@@ -92,6 +93,9 @@ flowchart LR
     X3 --> X5
     X4 --> X5
     V2 --> X5
+    X2 --> X6
+    X3 --> X6
+    B5 --> X6
     B2 --> V1
     C1 --> V1
     C2 --> V1
@@ -141,6 +145,7 @@ flowchart LR
 | アーキテクチャ | `architecture/03_security_privacy_design.md` | システム要求、NFR、データ/外部IF、実装 | DFD、脅威、制御、個人データを整理する |
 | アーキテクチャ | `architecture/04_development_environment_tobe.md` | システム要求、NFR、デプロイ、セキュリティ、テスト計画、実装監査 | 再現可能な開発環境、品質ゲート、段階的な整備方針を定義する |
 | アーキテクチャ | `architecture/05_cicd_devsecops_tobe.md` | デプロイ、セキュリティ、開発環境、テスト計画、CI実装監査 | PRから本番反映までのCI/CD、DevSecOps、リポジトリ統制、段階的な整備方針を定義する |
+| アーキテクチャ | `architecture/06_aws_deployment_tobe.md`(2026-07-15追加) | ADR-003、デプロイ、セキュリティ、NFR | AWS上の目標構成(ECS Fargate、S3+CloudFront、RDS)、Terraform方針、導入ロードマップを定義する |
 | 運用 | `operations/01_operations_runbook.md` | デプロイ、エラー設計、監視 | 起動・診断・インシデント初動を定義する |
 | 運用 | `operations/02_monitoring_alerting.md` | NFR、エラー/ログ、デプロイ | SLI、アラート、通知・演習を定義する |
 | 運用 | `operations/03_backup_restore.md` | NFR、DB/デプロイ、テスト計画 | RPO/RTO、対象、復元演習を定義する |

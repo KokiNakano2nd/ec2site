@@ -1,0 +1,42 @@
+# ローカル開発用のコンテナ構成 (ADR-003)。backend + PostgreSQL をコンテナで起動し、
+# frontend (Vite dev server) は従来どおりホストで起動する (`make dev` が両方を扱う)。
+# 資格情報はローカル開発専用の既知の値であり、本番では使用しない。
+services:
+  db:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_USER: ec_site
+      POSTGRES_PASSWORD: ec_site
+      POSTGRES_DB: ec_site
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: backend
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # コンテナ内からは db サービス名で接続する。root .env の DATABASE_URL より優先される
+      DATABASE_URL: postgresql+psycopg://ec_site:ec_site@db:5432/ec_site
+    ports:
+      - "127.0.0.1:8001:8001"
+    volumes:
+      # --reload 用にソースだけを差し込む (/app/.venv はイメージ側を使う)
+      - ./backend/app:/app/app
+      - ./backend/scripts:/app/scripts
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
