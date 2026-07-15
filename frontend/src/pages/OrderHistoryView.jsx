@@ -13,7 +13,9 @@ export function OrderHistoryView() {
   const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
-    fetchOrders(token).then(setOrders).catch((err) => setError(err.message));
+    fetchOrders(token)
+      .then(setOrders)
+      .catch((err) => setError(err.message));
   }, [token]);
 
   async function handleCancel(orderId) {
@@ -44,38 +46,79 @@ export function OrderHistoryView() {
 
   return (
     <div style={{ animation: "fadeUp 0.3s ease" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.8px", color: C.text, marginBottom: 8 }}>注文履歴</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.8px", color: C.text, marginBottom: 8 }}>
+        注文履歴
+      </h1>
       <p style={{ color: C.muted, fontSize: 14, marginBottom: 32 }}>
         {orders.length > 0 ? `${orders.length}件の注文` : "注文履歴はありません"}
       </p>
-      {error && (
-        <ErrorBanner>{error}</ErrorBanner>
-      )}
+      {error && <ErrorBanner>{error}</ErrorBanner>}
       {orders.length === 0 && !error && (
-        <div style={{ textAlign: "center", padding: "80px 40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20 }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "80px 40px",
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 20,
+          }}
+        >
           <p style={{ color: C.muted, fontSize: 15 }}>注文履歴がありません</p>
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {orders.map((order) => (
-          <div key={order.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
+          <div
+            key={order.id}
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "20px 24px",
+                borderBottom: `1px solid rgba(255,255,255,0.05)`,
+              }}
+            >
               <div>
                 <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{fmtDate(order.created_at)}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>注文 #{order.id}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                {(() => { const s = statusConfig(order.status); return (
-                  <span style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color, fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, letterSpacing: "0.3px" }}>{s.label}</span>
-                ); })()}
-                <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px", color: C.text }}>¥{fmt(order.total_price)}</span>
+                {(() => {
+                  const s = statusConfig(order.status);
+                  return (
+                    <span
+                      style={{
+                        background: s.bg,
+                        border: `1px solid ${s.border}`,
+                        color: s.color,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                        letterSpacing: "0.3px",
+                      }}
+                    >
+                      {s.label}
+                    </span>
+                  );
+                })()}
+                <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px", color: C.text }}>
+                  ¥{fmt(order.total_price)}
+                </span>
               </div>
             </div>
             <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
               {order.items.map((item) => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 }}>
+                <div
+                  key={item.id}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 }}
+                >
                   <span style={{ color: C.sec }}>
-                    {item.product.name}<span style={{ color: C.muted, marginLeft: 6 }}>× {item.quantity}</span>
+                    {item.product.name}
+                    <span style={{ color: C.muted, marginLeft: 6 }}>× {item.quantity}</span>
                   </span>
                   <span style={{ color: C.text, fontWeight: 600 }}>¥{fmt(item.price * item.quantity)}</span>
                 </div>
@@ -88,7 +131,16 @@ export function OrderHistoryView() {
                   <button
                     onClick={() => handleCancel(order.id)}
                     disabled={busyId === order.id}
-                    style={{ background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.2)", color: C.red, fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 10, cursor: "pointer" }}
+                    style={{
+                      background: "rgba(255,107,107,0.1)",
+                      border: "1px solid rgba(255,107,107,0.2)",
+                      color: C.red,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      padding: "8px 16px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                    }}
                   >
                     {busyId === order.id ? "処理中..." : "キャンセルする"}
                   </button>
@@ -101,12 +153,30 @@ export function OrderHistoryView() {
                     placeholder="返品理由（任意）"
                     value={returnReasons[order.id] || ""}
                     onChange={(e) => setReturnReasons((prev) => ({ ...prev, [order.id]: e.target.value }))}
-                    style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", color: C.text, fontSize: 13 }}
+                    style={{
+                      flex: 1,
+                      background: "rgba(255,255,255,0.03)",
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      color: C.text,
+                      fontSize: 13,
+                    }}
                   />
                   <button
                     onClick={() => handleReturnRequest(order.id)}
                     disabled={busyId === order.id}
-                    style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b", fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap" }}
+                    style={{
+                      background: "rgba(245,158,11,0.1)",
+                      border: "1px solid rgba(245,158,11,0.2)",
+                      color: "#f59e0b",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      padding: "8px 16px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {busyId === order.id ? "処理中..." : "返品を申請する"}
                   </button>

@@ -27,7 +27,16 @@ vi.mock("../AuthContext", () => ({
 
 import { AdminProductsView } from "./AdminProductsView";
 
-const product = { id: 1, name: "既存商品", description: "説明", price: 1000, stock: 5, image_url: "https://example.com/img.png", low_stock_threshold: null, images: [] };
+const product = {
+  id: 1,
+  name: "既存商品",
+  description: "説明",
+  price: 1000,
+  stock: 5,
+  image_url: "https://example.com/img.png",
+  low_stock_threshold: null,
+  images: [],
+};
 
 describe("AdminProductsView", () => {
   beforeEach(() => {
@@ -45,7 +54,15 @@ describe("AdminProductsView", () => {
 
   it("creates a product via createProduct", async () => {
     const user = userEvent.setup();
-    const created = { id: 2, name: "新商品", description: "新しい説明", price: 2000, stock: 10, image_url: "", images: [] };
+    const created = {
+      id: 2,
+      name: "新商品",
+      description: "新しい説明",
+      price: 2000,
+      stock: 10,
+      image_url: "",
+      images: [],
+    };
     createProductMock.mockResolvedValue(created);
     render(<AdminProductsView showToast={vi.fn()} />);
 
@@ -79,9 +96,9 @@ describe("AdminProductsView", () => {
   });
 
   it("shows a low-stock badge when stock is at or below the threshold", async () => {
-    fetchProductsMock.mockReset().mockResolvedValue([
-      { ...product, id: 3, name: "低在庫商品", stock: 2, low_stock_threshold: 5 },
-    ]);
+    fetchProductsMock
+      .mockReset()
+      .mockResolvedValue([{ ...product, id: 3, name: "低在庫商品", stock: 2, low_stock_threshold: 5 }]);
     render(<AdminProductsView showToast={vi.fn()} />);
 
     await screen.findByText("低在庫商品");

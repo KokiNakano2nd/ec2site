@@ -12,14 +12,19 @@ os.environ["SMTP_HOST"] = ""
 os.environ["EMAIL_DELIVERY"] = "console"
 
 import pytest
+from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 
-from app import rate_limit
+from app import auth, rate_limit
 from app.database import Base, SessionLocal, engine
 from app.main import app
 from app.seed import seed_initial_data
 
 TEST_PASSWORD = "password123"
+
+# Production keeps argon2-cffi's secure defaults. Tests exercise the same
+# algorithm and rehash behavior with lower resource costs so CI remains fast.
+auth.PASSWORD_HASHER = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
 
 
 @pytest.fixture(autouse=True)

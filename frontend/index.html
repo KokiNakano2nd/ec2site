@@ -4,54 +4,289 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TechStore</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: #09090f; color: #e8eaf6; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; min-height: 100vh; }
-      button { font-family: inherit; cursor: pointer; transition: all 0.15s; }
-      input, textarea { font-family: inherit; }
-      input::placeholder, textarea::placeholder { color: #4a5270; }
-      input:focus, textarea:focus { outline: none; border-color: rgba(91,139,245,0.5) !important; box-shadow: 0 0 0 3px rgba(91,139,245,0.1); }
-      @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes toastIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes shimmer { 0% { background-position: -600px 0; } 100% { background-position: 600px 0; } }
-      .skeleton { background: linear-gradient(90deg, #111422 25%, #1a1e35 50%, #111422 75%); background-size: 600px 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #09090f;
+        color: #e8eaf6;
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        min-height: 100vh;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      input,
+      textarea {
+        font-family: inherit;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: #4a5270;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(91, 139, 245, 0.5) !important;
+        box-shadow: 0 0 0 3px rgba(91, 139, 245, 0.1);
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: -600px 0;
+        }
+        100% {
+          background-position: 600px 0;
+        }
+      }
+      .skeleton {
+        background: linear-gradient(90deg, #111422 25%, #1a1e35 50%, #111422 75%);
+        background-size: 600px 100%;
+        animation: shimmer 1.4s infinite;
+        border-radius: 6px;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+      }
 
-      .btn-primary { background: #5b8bf5; border: none; color: #fff; border-radius: 10px; font-weight: 700; }
-      .btn-primary:hover { background: #7aa4f7; }
-      .btn-ghost { background: none; border: none; color: #7c85a8; border-radius: 8px; font-weight: 500; }
-      .btn-ghost:hover { color: #e8eaf6; background: rgba(255,255,255,0.06); }
-      .btn-surface { background: rgba(255,255,255,0.06); border: none; color: #e8eaf6; border-radius: 8px; font-weight: 500; }
-      .btn-surface:hover { background: rgba(255,255,255,0.1); }
-      .btn-danger { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.15); color: #ff6b6b; border-radius: 8px; font-weight: 500; }
-      .btn-danger:hover { background: rgba(255,107,107,0.15); }
-      .btn-logout { background: none; border: none; color: #7c85a8; font-size: 13px; padding: 0; }
-      .btn-logout:hover { color: #ff6b6b; }
-      .btn-back { background: none; border: none; color: #4a5270; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; padding: 0; font-size: 14px; }
-      .btn-back:hover { color: #e8eaf6; }
-      .btn-link { background: none; border: none; color: #5b8bf5; font-weight: 700; font-size: 13px; padding: 0; }
-      .btn-link:hover { color: #7aa4f7; }
-      .btn-add-cart { flex: 1; height: 48px; background: #5b8bf5; border: none; color: #fff; border-radius: 12px; font-size: 15px; font-weight: 700; }
-      .btn-add-cart:hover { background: #7aa4f7; transform: translateY(-1px); }
-      .btn-order { width: 100%; height: 50px; background: linear-gradient(135deg, #5b8bf5, #7b6cf6); border: none; color: #fff; border-radius: 12px; font-size: 15px; font-weight: 700; }
-      .btn-order:hover { opacity: 0.9; }
-      .btn-auth { height: 50px; background: #5b8bf5; border: none; color: #fff; border-radius: 12px; font-size: 15px; font-weight: 700; width: 100%; margin-top: 4px; }
-      .btn-auth:hover { background: #7aa4f7; transform: translateY(-1px); }
-      .cart-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #e8eaf6; border-radius: 9px; display: flex; align-items: center; gap: 6px; }
-      .cart-btn:hover { background: rgba(255,255,255,0.1); }
-      .product-card { background: #111422; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
-      .product-card:hover { border-color: rgba(91,139,245,0.35); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(91,139,245,0.08); }
-      .qty-btn { width: 44px; height: 48px; background: none; border: none; color: #e8eaf6; font-size: 20px; display: flex; align-items: center; justify-content: center; }
-      .qty-btn:hover { background: rgba(255,255,255,0.06); }
-      .qty-btn-sm { width: 34px; height: 34px; background: none; border: none; color: #e8eaf6; font-size: 15px; display: flex; align-items: center; justify-content: center; }
-      .qty-btn-sm:hover { background: rgba(255,255,255,0.06); }
-      .btn-remove { background: none; border: none; color: #4a5270; font-size: 18px; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-      .btn-remove:hover { background: rgba(255,107,107,0.1); color: #ff6b6b; }
-      .admin-row:hover td { background: rgba(255,255,255,0.02); }
-      .field-input { width: 100%; height: 46px; background: #111422; border: 1px solid rgba(255,255,255,0.08); border-radius: 11px; color: #e8eaf6; font-size: 14px; padding: 0 14px; transition: border-color 0.2s; }
+      .btn-primary {
+        background: #5b8bf5;
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+      }
+      .btn-primary:hover {
+        background: #7aa4f7;
+      }
+      .btn-ghost {
+        background: none;
+        border: none;
+        color: #7c85a8;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .btn-ghost:hover {
+        color: #e8eaf6;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .btn-surface {
+        background: rgba(255, 255, 255, 0.06);
+        border: none;
+        color: #e8eaf6;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .btn-surface:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .btn-danger {
+        background: rgba(255, 107, 107, 0.08);
+        border: 1px solid rgba(255, 107, 107, 0.15);
+        color: #ff6b6b;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .btn-danger:hover {
+        background: rgba(255, 107, 107, 0.15);
+      }
+      .btn-logout {
+        background: none;
+        border: none;
+        color: #7c85a8;
+        font-size: 13px;
+        padding: 0;
+      }
+      .btn-logout:hover {
+        color: #ff6b6b;
+      }
+      .btn-back {
+        background: none;
+        border: none;
+        color: #4a5270;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0;
+        font-size: 14px;
+      }
+      .btn-back:hover {
+        color: #e8eaf6;
+      }
+      .btn-link {
+        background: none;
+        border: none;
+        color: #5b8bf5;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 0;
+      }
+      .btn-link:hover {
+        color: #7aa4f7;
+      }
+      .btn-add-cart {
+        flex: 1;
+        height: 48px;
+        background: #5b8bf5;
+        border: none;
+        color: #fff;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .btn-add-cart:hover {
+        background: #7aa4f7;
+        transform: translateY(-1px);
+      }
+      .btn-order {
+        width: 100%;
+        height: 50px;
+        background: linear-gradient(135deg, #5b8bf5, #7b6cf6);
+        border: none;
+        color: #fff;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .btn-order:hover {
+        opacity: 0.9;
+      }
+      .btn-auth {
+        height: 50px;
+        background: #5b8bf5;
+        border: none;
+        color: #fff;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        width: 100%;
+        margin-top: 4px;
+      }
+      .btn-auth:hover {
+        background: #7aa4f7;
+        transform: translateY(-1px);
+      }
+      .cart-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #e8eaf6;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .cart-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .product-card {
+        background: #111422;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .product-card:hover {
+        border-color: rgba(91, 139, 245, 0.35);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(91, 139, 245, 0.08);
+      }
+      .qty-btn {
+        width: 44px;
+        height: 48px;
+        background: none;
+        border: none;
+        color: #e8eaf6;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .qty-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .qty-btn-sm {
+        width: 34px;
+        height: 34px;
+        background: none;
+        border: none;
+        color: #e8eaf6;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .qty-btn-sm:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .btn-remove {
+        background: none;
+        border: none;
+        color: #4a5270;
+        font-size: 18px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-remove:hover {
+        background: rgba(255, 107, 107, 0.1);
+        color: #ff6b6b;
+      }
+      .admin-row:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .field-input {
+        width: 100%;
+        height: 46px;
+        background: #111422;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 11px;
+        color: #e8eaf6;
+        font-size: 14px;
+        padding: 0 14px;
+        transition: border-color 0.2s;
+      }
     </style>
   </head>
   <body>

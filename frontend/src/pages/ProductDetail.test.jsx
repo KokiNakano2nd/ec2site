@@ -48,7 +48,16 @@ describe("ProductDetail", () => {
   });
 
   it("renders the product from fetchProductById", async () => {
-    render(<ProductDetail productId={1} onBack={vi.fn()} onNavigateLogin={vi.fn()} showToast={vi.fn()} onToggleFav={vi.fn()} onSelect={vi.fn()} />);
+    render(
+      <ProductDetail
+        productId={1}
+        onBack={vi.fn()}
+        onNavigateLogin={vi.fn()}
+        showToast={vi.fn()}
+        onToggleFav={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    );
     expect(await screen.findByText("テスト商品")).toBeInTheDocument();
     expect(screen.getByText("テスト説明")).toBeInTheDocument();
   });
@@ -57,7 +66,16 @@ describe("ProductDetail", () => {
     const user = userEvent.setup();
     addToCartMock.mockResolvedValue({});
     const showToast = vi.fn();
-    render(<ProductDetail productId={1} onBack={vi.fn()} onNavigateLogin={vi.fn()} showToast={showToast} onToggleFav={vi.fn()} onSelect={vi.fn()} />);
+    render(
+      <ProductDetail
+        productId={1}
+        onBack={vi.fn()}
+        onNavigateLogin={vi.fn()}
+        showToast={showToast}
+        onToggleFav={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    );
 
     await screen.findByText("テスト商品");
     await user.click(screen.getByText("カートに入れる"));
@@ -69,7 +87,16 @@ describe("ProductDetail", () => {
   it("calls onToggleFav when the favorite button is clicked", async () => {
     const user = userEvent.setup();
     const onToggleFav = vi.fn();
-    render(<ProductDetail productId={1} onBack={vi.fn()} onNavigateLogin={vi.fn()} showToast={vi.fn()} onToggleFav={onToggleFav} onSelect={vi.fn()} />);
+    render(
+      <ProductDetail
+        productId={1}
+        onBack={vi.fn()}
+        onNavigateLogin={vi.fn()}
+        showToast={vi.fn()}
+        onToggleFav={onToggleFav}
+        onSelect={vi.fn()}
+      />,
+    );
 
     await screen.findByText("テスト商品");
     await user.click(screen.getByText("🤍 お気に入りに追加"));

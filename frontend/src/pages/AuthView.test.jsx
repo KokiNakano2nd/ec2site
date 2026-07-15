@@ -88,12 +88,7 @@ describe("AuthView", () => {
     const user = userEvent.setup();
     confirmPasswordResetMock.mockResolvedValue();
     render(
-      <AuthView
-        initialMode="password-reset-confirm"
-        resetToken="abc-token"
-        onSuccess={vi.fn()}
-        onToggle={vi.fn()}
-      />
+      <AuthView initialMode="password-reset-confirm" resetToken="abc-token" onSuccess={vi.fn()} onToggle={vi.fn()} />,
     );
 
     await user.type(screen.getByPlaceholderText("6文字以上"), "new-password-456");
@@ -107,12 +102,7 @@ describe("AuthView", () => {
     const user = userEvent.setup();
     confirmPasswordResetMock.mockRejectedValue(new Error("リンクが無効です。再度お手続きください"));
     render(
-      <AuthView
-        initialMode="password-reset-confirm"
-        resetToken="bad-token"
-        onSuccess={vi.fn()}
-        onToggle={vi.fn()}
-      />
+      <AuthView initialMode="password-reset-confirm" resetToken="bad-token" onSuccess={vi.fn()} onToggle={vi.fn()} />,
     );
 
     await user.type(screen.getByPlaceholderText("6文字以上"), "new-password-456");

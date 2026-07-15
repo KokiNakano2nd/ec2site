@@ -25,7 +25,7 @@ export default [
       // which flags idiomatic React 18 data-fetching patterns used throughout this codebase.
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true, allowExportNames: ["useAuth"] }],
     },
   },
   {

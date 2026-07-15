@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import { fetchAnalyticsSummary, fetchCategorySales, fetchSalesByDate, fetchTopProducts } from "../api/analytics";
 import { fetchLowStockProducts } from "../api/admin";
@@ -32,42 +42,62 @@ export function AdminDashboardView() {
       fetchCategorySales(token),
       fetchLowStockProducts(token),
       fetchLowRemainingUsesCoupons(token),
-    ]).then(([s, d, p, c, lowStock, lowRemainingCoupons]) => {
-      if (!active) return;
-      setSummary(s);
-      setSalesByDate(d);
-      setTopProducts(p);
-      setCategorySales(c);
-      setLowStockProducts(lowStock);
-      setLowRemainingUsesCoupons(lowRemainingCoupons);
-    }).catch((requestError) => {
-      if (active) setError(requestError.message);
-    }).finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => { active = false; };
+    ])
+      .then(([s, d, p, c, lowStock, lowRemainingCoupons]) => {
+        if (!active) return;
+        setSummary(s);
+        setSalesByDate(d);
+        setTopProducts(p);
+        setCategorySales(c);
+        setLowStockProducts(lowStock);
+        setLowRemainingUsesCoupons(lowRemainingCoupons);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   const KpiCard = ({ label, value, sub, accent }) => (
     <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 }}>
-      <p style={{ fontSize: 12, color: C.muted, marginBottom: 8, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase" }}>{label}</p>
+      <p
+        style={{
+          fontSize: 12,
+          color: C.muted,
+          marginBottom: 8,
+          fontWeight: 600,
+          letterSpacing: "0.5px",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </p>
       <p style={{ fontSize: 30, fontWeight: 800, color: accent || C.text, letterSpacing: "-0.8px" }}>{value}</p>
       {sub && <p style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{sub}</p>}
     </div>
   );
 
-  if (loading) return (
-    <div style={{ animation: "fadeUp 0.3s ease" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
-        {[...Array(4)].map((_, i) => (
-          <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 }}>
-            <div className="skeleton" style={{ height: 12, width: "60%", marginBottom: 12 }} />
-            <div className="skeleton" style={{ height: 32, width: "80%" }} />
-          </div>
-        ))}
+  if (loading)
+    return (
+      <div style={{ animation: "fadeUp 0.3s ease" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 }}
+            >
+              <div className="skeleton" style={{ height: 12, width: "60%", marginBottom: 12 }} />
+              <div className="skeleton" style={{ height: 32, width: "80%" }} />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
 
   if (error) return <ErrorBanner>{error}</ErrorBanner>;
 
@@ -76,7 +106,18 @@ export function AdminDashboardView() {
   return (
     <div style={{ animation: "fadeUp 0.3s ease" }}>
       <div style={{ marginBottom: 28 }}>
-        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1, color: "#8b5cf6", textTransform: "uppercase", marginBottom: 6 }}>管理者パネル</p>
+        <p
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: 1,
+            color: "#8b5cf6",
+            textTransform: "uppercase",
+            marginBottom: 6,
+          }}
+        >
+          管理者パネル
+        </p>
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.6px", color: C.text }}>売上ダッシュボード</h1>
       </div>
 
@@ -87,32 +128,58 @@ export function AdminDashboardView() {
         <KpiCard label="ユーザー数" value={`${summary?.user_count || 0}人`} />
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 28 }}>
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 28,
+        }}
+      >
         <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16 }}>低在庫アラート</h2>
         {lowStockProducts.length === 0 ? (
           <p style={{ color: C.muted, fontSize: 13 }}>現在低在庫の商品はありません</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {lowStockProducts.map((p) => (
-              <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+              <div
+                key={p.id}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}
+              >
                 <span style={{ color: C.text, fontWeight: 600 }}>{p.name}</span>
-                <span style={{ color: C.red }}>在庫 {p.stock} / しきい値 {p.low_stock_threshold}</span>
+                <span style={{ color: C.red }}>
+                  在庫 {p.stock} / しきい値 {p.low_stock_threshold}
+                </span>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 28 }}>
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 28,
+        }}
+      >
         <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16 }}>クーポン残数アラート</h2>
         {lowRemainingUsesCoupons.length === 0 ? (
           <p style={{ color: C.muted, fontSize: 13 }}>残数僅少のクーポンはありません</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {lowRemainingUsesCoupons.map((c) => (
-              <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+              <div
+                key={c.id}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}
+              >
                 <span style={{ color: C.text, fontWeight: 600, fontFamily: "monospace" }}>{c.code}</span>
-                <span style={{ color: C.red }}>残り {c.max_uses - c.used_count} 回 / しきい値 {c.low_remaining_uses_threshold}</span>
+                <span style={{ color: C.red }}>
+                  残り {c.max_uses - c.used_count} 回 / しきい値 {c.low_remaining_uses_threshold}
+                </span>
               </div>
             ))}
           </div>
@@ -120,7 +187,15 @@ export function AdminDashboardView() {
       </div>
 
       {noData ? (
-        <div style={{ textAlign: "center", padding: "80px 40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20 }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "80px 40px",
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 20,
+          }}
+        >
           <p style={{ color: C.muted, fontSize: 15 }}>注文データがまだありません。</p>
         </div>
       ) : (
@@ -141,20 +216,40 @@ export function AdminDashboardView() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis dataKey="date" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `¥${fmt(v)}`} width={70} />
+                    <YAxis
+                      tick={{ fill: C.muted, fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => `¥${fmt(v)}`}
+                      width={70}
+                    />
                     <Tooltip
-                      contentStyle={{ background: C.dark, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 12 }}
+                      contentStyle={{
+                        background: C.dark,
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 10,
+                        fontSize: 12,
+                      }}
                       labelStyle={{ color: C.sec }}
                       formatter={(v) => [`¥${fmt(v)}`, "売上"]}
                     />
-                    <Area type="monotone" dataKey="revenue" stroke="#5b8bf5" fill="url(#salesGrad)" strokeWidth={2} dot={false} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#5b8bf5"
+                      fill="url(#salesGrad)"
+                      strokeWidth={2}
+                      dot={false}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </div>
 
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 20 }}>人気商品 TOP5（販売数）</h2>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 20 }}>
+                人気商品 TOP5（販売数）
+              </h2>
               {topProducts.length === 0 ? (
                 <p style={{ color: C.muted, fontSize: 13 }}>データなし</p>
               ) : (
@@ -162,9 +257,21 @@ export function AdminDashboardView() {
                   <BarChart data={topProducts} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                     <XAxis type="number" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fill: C.sec, fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ fill: C.sec, fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={110}
+                    />
                     <Tooltip
-                      contentStyle={{ background: C.dark, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 12 }}
+                      contentStyle={{
+                        background: C.dark,
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 10,
+                        fontSize: 12,
+                      }}
                       formatter={(v) => [v, "販売数"]}
                     />
                     <Bar dataKey="total_qty" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
@@ -182,22 +289,46 @@ export function AdminDashboardView() {
               <>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={categorySales} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="revenue" paddingAngle={3}>
+                    <Pie
+                      data={categorySales}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      dataKey="revenue"
+                      paddingAngle={3}
+                    >
                       {categorySales.map((_, i) => (
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ background: C.dark, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 12 }}
+                      contentStyle={{
+                        background: C.dark,
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 10,
+                        fontSize: 12,
+                      }}
                       formatter={(v) => [`¥${fmt(v)}`, "売上"]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
                   {categorySales.map((c, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+                    <div
+                      key={i}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}
+                    >
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: CHART_COLORS[i % CHART_COLORS.length], flexShrink: 0 }} />
+                        <div
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: CHART_COLORS[i % CHART_COLORS.length],
+                            flexShrink: 0,
+                          }}
+                        />
                         <span style={{ color: C.sec }}>{c.category}</span>
                       </div>
                       <span style={{ color: C.text, fontWeight: 600 }}>¥{fmt(c.revenue)}</span>

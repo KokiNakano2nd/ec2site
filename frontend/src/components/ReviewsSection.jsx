@@ -30,7 +30,10 @@ export function ReviewsSection({ productId, onNavigateLogin, showToast }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!token) { onNavigateLogin(); return; }
+    if (!token) {
+      onNavigateLogin();
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -53,7 +56,9 @@ export function ReviewsSection({ productId, onNavigateLogin, showToast }) {
         {avgRating ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <StarRating value={Math.round(avgRating)} readonly size={16} />
-            <span style={{ fontSize: 13, color: C.sec }}>{avgRating.toFixed(1)} ({reviews.length}件)</span>
+            <span style={{ fontSize: 13, color: C.sec }}>
+              {avgRating.toFixed(1)} ({reviews.length}件)
+            </span>
           </div>
         ) : (
           <span style={{ fontSize: 13, color: C.muted }}>まだレビューはありません</span>
@@ -84,7 +89,12 @@ export function ReviewsSection({ productId, onNavigateLogin, showToast }) {
                 {error}
               </ErrorBanner>
             )}
-            <button className="btn-primary" type="submit" disabled={submitting} style={{ padding: "10px 24px", fontSize: 14, borderRadius: 10 }}>
+            <button
+              className="btn-primary"
+              type="submit"
+              disabled={submitting}
+              style={{ padding: "10px 24px", fontSize: 14, borderRadius: 10 }}
+            >
               {submitting ? "送信中..." : token ? "投稿する" : "ログインして投稿"}
             </button>
           </form>
@@ -97,15 +107,28 @@ export function ReviewsSection({ productId, onNavigateLogin, showToast }) {
             </div>
           )}
           {reviews.map((review) => (
-            <div key={review.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 20px" }}>
+            <div
+              key={review.id}
+              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 20px" }}
+            >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    background: "linear-gradient(135deg,#5b8bf5,#8b5cf6)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 12, fontWeight: 700, color: "#fff",
-                  }}>{(review.user_email || "?")[0].toUpperCase()}</div>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg,#5b8bf5,#8b5cf6)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#fff",
+                    }}
+                  >
+                    {(review.user_email || "?")[0].toUpperCase()}
+                  </div>
                   <span style={{ fontSize: 13, color: C.sec }}>{review.user_email}</span>
                 </div>
                 <span style={{ fontSize: 11, color: C.muted }}>{fmtDate(review.created_at)}</span>

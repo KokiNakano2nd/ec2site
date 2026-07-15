@@ -30,5 +30,6 @@ make e2e
 ```
 
 - backendは`backend/scripts/run_e2e_server.py`からテスト専用の一時SQLiteで起動され、開発DBには接続しない。
-- 現時点ではCIには含めず、手元実行のみ([[../docs/deliverables/requirements/06_nonfunctional_requirements|NFR-020]]参照)。
-- CI(GitHub Actions)ではlint・vitest(カバレッジゲート込み)・buildが自動実行される(`.github/workflows/ci.yml`)。
+- PR CIでは`@smoke`を付けたChromiumの主要導線を実行し、失敗時にtrace・screenshot・HTML reportを7日間保存する。
+- 手元では`make e2e-smoke`でsmoke subset、`make e2e`で全件を実行できる。
+- CI(GitHub Actions)ではESLint・Prettier・Vitest(カバレッジゲート込み)・production依存監査・buildも自動実行される(`.github/workflows/ci.yml`)。

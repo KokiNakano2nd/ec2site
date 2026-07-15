@@ -49,4 +49,6 @@ make dev
 make check
 ```
 
-主要E2Eは`make e2e`、秘密情報の履歴スキャンは`make security`で実行する。必要な実行ファイルとPlaywrightブラウザは`.tools/`に置かれ、git管理されない。
+主要E2Eは`make e2e`、PR相当のsmokeは`make e2e-smoke`、GitHub Actionsの静的検査は`make workflow-lint`、秘密情報の履歴スキャンは`make security`で実行する。必要な実行ファイルとPlaywrightブラウザは`.tools/`に置かれ、git管理されない。
+
+脆弱性の非公開報告手順は[Security Policy](SECURITY.md)を参照する。

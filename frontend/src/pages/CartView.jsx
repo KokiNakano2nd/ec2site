@@ -29,19 +29,25 @@ export function CartView({ onOrderComplete, showToast }) {
   useEffect(() => {
     const controller = new AbortController();
     const requestOptions = { signal: controller.signal };
-    fetchCart(token, requestOptions).then(setItems).catch((err) => {
-      if (err.name !== "AbortError") setError(err.message);
-    });
-    fetchAddresses(token, requestOptions).then((addrs) => {
-      setAddresses(addrs);
-      const def = addrs.find((a) => a.is_default);
-      if (def) setSelectedAddressId(def.id);
-    }).catch((err) => {
-      if (err.name !== "AbortError") setError(err.message);
-    });
-    fetchConfig(requestOptions).then((cfg) => setStripeEnabled(cfg.stripe_enabled)).catch((err) => {
-      if (err.name !== "AbortError") setError(err.message);
-    });
+    fetchCart(token, requestOptions)
+      .then(setItems)
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      });
+    fetchAddresses(token, requestOptions)
+      .then((addrs) => {
+        setAddresses(addrs);
+        const def = addrs.find((a) => a.is_default);
+        if (def) setSelectedAddressId(def.id);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      });
+    fetchConfig(requestOptions)
+      .then((cfg) => setStripeEnabled(cfg.stripe_enabled))
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err.message);
+      });
     return () => controller.abort();
   }, [token]);
 
@@ -118,12 +124,20 @@ export function CartView({ onOrderComplete, showToast }) {
 
   return (
     <div style={{ animation: "fadeUp 0.3s ease" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.8px", color: C.text, marginBottom: 32 }}>ショッピングカート</h1>
-      {error && (
-        <ErrorBanner>{error}</ErrorBanner>
-      )}
+      <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.8px", color: C.text, marginBottom: 32 }}>
+        ショッピングカート
+      </h1>
+      {error && <ErrorBanner>{error}</ErrorBanner>}
       {items.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "100px 40px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20 }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "100px 40px",
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 20,
+          }}
+        >
           <div style={{ fontSize: 56, marginBottom: 20, opacity: 0.5 }}>🛒</div>
           <p style={{ color: C.muted, fontSize: 16, marginBottom: 24 }}>カートに商品がありません</p>
         </div>
@@ -131,32 +145,108 @@ export function CartView({ onOrderComplete, showToast }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 28, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {items.map((item) => (
-              <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-                <div style={{ width: 76, height: 76, background: C.dark, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <img src={item.product.image_url} alt={item.product.name} loading="lazy" style={{ width: 56, height: 56, objectFit: "contain" }} />
+              <div
+                key={item.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 14,
+                  padding: 16,
+                }}
+              >
+                <div
+                  style={{
+                    width: 76,
+                    height: 76,
+                    background: C.dark,
+                    borderRadius: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src={item.product.image_url}
+                    alt={item.product.name}
+                    loading="lazy"
+                    style={{ width: 56, height: 56, objectFit: "contain" }}
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product.name}</div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: C.text,
+                      marginBottom: 3,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {item.product.name}
+                  </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>
-                    ¥{fmt(item.product.price)}<span style={{ fontSize: 12, color: C.muted, fontWeight: 400, marginLeft: 4 }}>/ 個</span>
+                    ¥{fmt(item.product.price)}
+                    <span style={{ fontSize: 12, color: C.muted, fontWeight: 400, marginLeft: 4 }}>/ 個</span>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", background: C.dark, border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 9, overflow: "hidden" }}>
-                  <button className="qty-btn-sm" onClick={() => item.quantity > 1 && handleQuantityChange(item.id, item.quantity - 1)}>−</button>
-                  <span style={{ padding: "0 10px", fontSize: 14, fontWeight: 600, color: C.text }}>{item.quantity}</span>
-                  <button className="qty-btn-sm" onClick={() => handleQuantityChange(item.id, item.quantity + 1)}>+</button>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: C.dark,
+                    border: `1px solid rgba(255,255,255,0.07)`,
+                    borderRadius: 9,
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    className="qty-btn-sm"
+                    onClick={() => item.quantity > 1 && handleQuantityChange(item.id, item.quantity - 1)}
+                  >
+                    −
+                  </button>
+                  <span style={{ padding: "0 10px", fontSize: 14, fontWeight: 600, color: C.text }}>
+                    {item.quantity}
+                  </span>
+                  <button className="qty-btn-sm" onClick={() => handleQuantityChange(item.id, item.quantity + 1)}>
+                    +
+                  </button>
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: C.accent, minWidth: 88, textAlign: "right" }}>¥{fmt(item.product.price * item.quantity)}</div>
-                <button className="btn-remove" onClick={() => handleRemove(item.id)}>×</button>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.accent, minWidth: 88, textAlign: "right" }}>
+                  ¥{fmt(item.product.price * item.quantity)}
+                </div>
+                <button className="btn-remove" onClick={() => handleRemove(item.id)}>
+                  ×
+                </button>
               </div>
             ))}
           </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, position: "sticky", top: 88 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 20, letterSpacing: "-0.2px" }}>注文サマリー</h2>
+          <div
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 16,
+              padding: 24,
+              position: "sticky",
+              top: 88,
+            }}
+          >
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 20, letterSpacing: "-0.2px" }}>
+              注文サマリー
+            </h2>
 
             <CouponBox
               couponInput={couponInput}
-              onCouponInputChange={(e) => { setCouponInput(e.target.value); setCouponError(null); }}
+              onCouponInputChange={(e) => {
+                setCouponInput(e.target.value);
+                setCouponError(null);
+              }}
               appliedCoupon={appliedCoupon}
               onApply={handleApplyCoupon}
               onRemove={handleRemoveCoupon}
@@ -166,7 +256,8 @@ export function CartView({ onOrderComplete, showToast }) {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                <span style={{ color: C.muted }}>小計</span><span style={{ color: C.text }}>¥{fmt(subtotal)}</span>
+                <span style={{ color: C.muted }}>小計</span>
+                <span style={{ color: C.text }}>¥{fmt(subtotal)}</span>
               </div>
               {discountAmount > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
@@ -175,15 +266,28 @@ export function CartView({ onOrderComplete, showToast }) {
                 </div>
               )}
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                <span style={{ color: C.muted }}>送料</span><span style={{ color: C.green, fontWeight: 600 }}>無料</span>
+                <span style={{ color: C.muted }}>送料</span>
+                <span style={{ color: C.green, fontWeight: 600 }}>無料</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                <span style={{ color: C.muted }}>消費税（10%）</span><span style={{ color: C.text }}>¥{fmt(tax)}</span>
+                <span style={{ color: C.muted }}>消費税（10%）</span>
+                <span style={{ color: C.text }}>¥{fmt(tax)}</span>
               </div>
             </div>
-            <div style={{ borderTop: `1px solid rgba(255,255,255,0.07)`, paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+            <div
+              style={{
+                borderTop: `1px solid rgba(255,255,255,0.07)`,
+                paddingTop: 16,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: 20,
+              }}
+            >
               <span style={{ fontSize: 14, color: C.muted }}>合計（税込）</span>
-              <span style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.5px" }}>¥{fmt(grandTotal)}</span>
+              <span style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.5px" }}>
+                ¥{fmt(grandTotal)}
+              </span>
             </div>
             {addresses.length > 0 && (
               <div style={{ marginBottom: 16 }}>
@@ -193,10 +297,14 @@ export function CartView({ onOrderComplete, showToast }) {
                     <label
                       key={addr.id}
                       style={{
-                        display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        cursor: "pointer",
                         background: selectedAddressId === addr.id ? "rgba(91,139,245,0.08)" : "rgba(255,255,255,0.03)",
                         border: `1px solid ${selectedAddressId === addr.id ? "rgba(91,139,245,0.3)" : C.border}`,
-                        borderRadius: 10, padding: "10px 12px",
+                        borderRadius: 10,
+                        padding: "10px 12px",
                       }}
                     >
                       <input
@@ -210,7 +318,9 @@ export function CartView({ onOrderComplete, showToast }) {
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{addr.name}</div>
                         <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                          〒{addr.postal_code} {addr.prefecture}{addr.city}{addr.address_line1}
+                          〒{addr.postal_code} {addr.prefecture}
+                          {addr.city}
+                          {addr.address_line1}
                           {addr.address_line2 && ` ${addr.address_line2}`}
                         </div>
                       </div>
@@ -228,10 +338,20 @@ export function CartView({ onOrderComplete, showToast }) {
                 onClick={handleStripeCheckout}
                 disabled={stripeLoading}
                 style={{
-                  width: "100%", height: 50, background: "#6772e5", border: "none",
-                  color: "#fff", borderRadius: 12, fontSize: 15, fontWeight: 700,
-                  cursor: stripeLoading ? "not-allowed" : "pointer", opacity: stripeLoading ? 0.7 : 1,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  width: "100%",
+                  height: 50,
+                  background: "#6772e5",
+                  border: "none",
+                  color: "#fff",
+                  borderRadius: 12,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: stripeLoading ? "not-allowed" : "pointer",
+                  opacity: stripeLoading ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                 }}
               >
                 {stripeLoading ? "処理中..." : "💳 カードで決済 (Stripe)"}

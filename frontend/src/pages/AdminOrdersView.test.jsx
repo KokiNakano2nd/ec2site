@@ -20,8 +20,12 @@ import { AdminOrdersView } from "./AdminOrdersView";
 
 function makeOrder(overrides) {
   return {
-    id: 1, user_email: "user@example.com", created_at: "2026-01-01T00:00:00Z",
-    status: "pending", total_price: 5000, return_reason: null,
+    id: 1,
+    user_email: "user@example.com",
+    created_at: "2026-01-01T00:00:00Z",
+    status: "pending",
+    total_price: 5000,
+    return_reason: null,
     ...overrides,
   };
 }
